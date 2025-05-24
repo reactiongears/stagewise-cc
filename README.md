@@ -1,14 +1,28 @@
-# <img src="https://github.com/stagewise-io/assets/blob/main/media/logo.png?raw=true" alt="stagewise logo" width="48" height="48" style="border-radius: 50%; vertical-align: middle; margin-right: 8px;" /> stagewise
+# <img src="https://github.com/stagewise-io/assets/blob/main/media/logo.png?raw=true" alt="stagewise logo" width="48" height="48" style="border-radius: 50%; vertical-align: middle; margin-right: 8px;" /> stagewise - VSCode + Claude Code SDK Fork
 
-# Eyesight for your AI-powered Code Editor.
+# Eyesight for your AI-powered Code Editor - Now with VSCode & Claude Code Support!
 
 [![VS Code Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/stagewise.stagewise-vscode-extension?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=stagewise.stagewise-vscode-extension) [![GitHub Repo stars](https://img.shields.io/github/stars/stagewise-io/stagewise)](https://github.com/stagewise-io/stagewise) [![Join us on Discord](https://img.shields.io/discord/1229378372141056010?label=Discord&logo=discord&logoColor=white)](https://discord.gg/gkdGsDYaKA) <!-- [![Build Status](https://img.shields.io/github/actions/workflow/status/stagewise-io/stagewise/ci.yml?branch=main)](https://github.com/stagewise-io/stagewise/actions) -->
+
+> **🚀 Fork Purpose**: This fork extends Stagewise to support standard VSCode installations with Claude Code SDK integration, enabling users with Anthropic Max subscriptions to leverage Claude's AI capabilities directly in VSCode.
 
 
 ![stagewise demo](https://github.com/stagewise-io/assets/blob/main/media/demo.gif?raw=true)
 
 
-## About the project
+## About this Fork
+
+This fork extends the original Stagewise project to support **VSCode with Claude Code SDK**, providing a native integration for developers who:
+- Use standard VSCode (not Cursor or Windsurf)
+- Have an Anthropic Max subscription with Claude Code access
+- Want to leverage Claude's advanced coding capabilities directly in their IDE
+
+### What's New in This Fork?
+- **Native VSCode Support**: Works with any VSCode installation (no proprietary IDE required)
+- **Claude Code SDK Integration**: Direct integration with Anthropic's Claude Code for AI-powered assistance
+- **Same Great UX**: Maintains the original browser-to-IDE workflow you love
+
+## About the Original Project
 
 **stagewise is a browser toolbar that connects your frontend UI to your code ai agents in your code editor.**
 
@@ -293,6 +307,7 @@ You would then use `StagewiseToolbarLoader` in your `src/routes/+layout.svelte`.
 | -------------- | -------------- |
 | Cursor         | ✅              |
 | Windsurf       | ✅              |
+| **VSCode + Claude Code** | **🚧 This Fork** |
 | GitHub Copilot | 🚧 In Progress |
 | Cline          | ❌              |
 | BLACKBOXAI     | ❌              |
@@ -305,7 +320,21 @@ You would then use `StagewiseToolbarLoader` in your `src/routes/+layout.svelte`.
 
 ## 🛣️ Roadmap
 
-Check out our [project roadmap](./.github/ROADMAP.md) for upcoming features, bug fixes, and progress.
+### Fork-Specific Roadmap
+- [ ] **Phase 1**: Core Claude Code SDK integration
+- [ ] **Phase 2**: Context enhancement with workspace awareness
+- [ ] **Phase 3**: Multi-turn conversation support
+- [ ] **Phase 4**: MCP server integration for extended capabilities
+
+For the original project roadmap, check out the [project roadmap](./.github/ROADMAP.md).
+
+## 📋 VSCode + Claude Code Requirements
+
+To use this fork with VSCode and Claude Code:
+1. **VSCode**: Any standard installation (1.75+)
+2. **Anthropic Max Subscription**: Required for Claude Code access
+3. **Claude Code CLI**: Install via Anthropic (or bundled with extension)
+4. **API Key**: Configure in VSCode settings
 
 ## 📜 License
 
