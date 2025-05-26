@@ -206,6 +206,10 @@ export class Logger {
         break;
     }
   }
+  
+  show(): void {
+    this.outputChannel.show();
+  }
 }
 
 export class ScopedLogger {

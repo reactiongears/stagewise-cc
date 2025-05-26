@@ -10,8 +10,15 @@
     "vscode": "^1.85.0"
   },
   "license": "AGPL-3.0-only",
-  "categories": ["AI", "Debuggers", "Machine Learning", "Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "AI",
+    "Debuggers",
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -68,7 +75,12 @@
         "stagewise-cc.claude.model": {
           "type": "string",
           "default": "claude-3-5-sonnet-20241022",
-          "enum": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "claude-3-5-sonnet-20241022"],
+          "enum": [
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307",
+            "claude-3-5-sonnet-20241022"
+          ],
           "enumDescriptions": [
             "Claude 3 Opus - Most capable model for complex tasks",
             "Claude 3 Sonnet - Balanced performance and speed",
@@ -125,12 +137,20 @@
         },
         "stagewise-cc.claude.contextWindow.filePatterns": {
           "type": "array",
-          "default": ["**/*.{ts,tsx,js,jsx,py,java,cpp,c,h,go,rs,rb,php,swift,kt,scala,r,m,dart}"],
+          "default": [
+            "**/*.{ts,tsx,js,jsx,py,java,cpp,c,h,go,rs,rb,php,swift,kt,scala,r,m,dart}"
+          ],
           "description": "File patterns to include in context"
         },
         "stagewise-cc.claude.contextWindow.excludePatterns": {
           "type": "array",
-          "default": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/.git/**", "**/vendor/**"],
+          "default": [
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/.git/**",
+            "**/vendor/**"
+          ],
           "description": "File patterns to exclude from context"
         },
         "stagewise-cc.claude.showInStatusBar": {
@@ -146,7 +166,13 @@
         "stagewise-cc.claude.outputChannelLevel": {
           "type": "string",
           "default": "info",
-          "enum": ["error", "warning", "info", "debug", "trace"],
+          "enum": [
+            "error",
+            "warning",
+            "info",
+            "debug",
+            "trace"
+          ],
           "description": "Logging level for the output channel"
         },
         "stagewise-cc.claude.timeout": {
@@ -201,7 +227,10 @@
           "description": "Enable experimental beta features"
         },
         "stagewise-cc.claude.experimental.customEndpoint": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "default": null,
           "description": "Custom API endpoint (advanced users only)"
         },
@@ -259,8 +288,10 @@
     "@modelcontextprotocol/sdk": "1.10.2",
     "@stagewise/extension-toolbar-srpc-contract": "workspace:*",
     "@types/cors": "^2.8.18",
+    "@types/diff": "^8.0.0",
     "@types/express": "^5.0.1",
     "cors": "^2.8.5",
+    "diff": "^8.0.2",
     "express": "^5.1.0",
     "ws": "^8.18.2",
     "zod": "^3.24.4"
@@ -268,8 +299,12 @@
   "turbo": {
     "tasks": {
       "build": {
-        "dependsOn": ["^build"],
-        "outputs": ["out/**"]
+        "dependsOn": [
+          "^build"
+        ],
+        "outputs": [
+          "out/**"
+        ]
       }
     }
   }

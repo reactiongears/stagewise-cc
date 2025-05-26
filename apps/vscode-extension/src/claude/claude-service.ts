@@ -30,6 +30,8 @@ import { StreamingResponseParser, CodeBlock } from './streaming-parser';
 import { ResponseBuffer } from './response-buffer';
 import { MarkdownParser } from './markdown-parser';
 import { CodeBlockExtractor } from './code-block-extractor';
+import { CodeExtractor } from './code-extractor';
+import { FileModificationService } from './file-modification-service';
 
 export class ClaudeService extends EventEmitter {
   private static instance: ClaudeService;
@@ -41,7 +43,9 @@ export class ClaudeService extends EventEmitter {
   private streamingParser: StreamingResponseParser | null = null;
   private responseBuffer: ResponseBuffer | null = null;
   private markdownParser: MarkdownParser | null = null;
-  private codeExtractor: CodeBlockExtractor | null = null;
+  private codeBlockExtractor: CodeBlockExtractor | null = null;
+  private codeExtractor: CodeExtractor | null = null;
+  private fileModificationService: FileModificationService | null = null;
   private responseCache: Map<string, ClaudeCompleteResponse> = new Map();
   private isInitialized = false;
   
@@ -185,6 +189,59 @@ export class ClaudeService extends EventEmitter {
     }
   }
   
+  /**
+   * Apply code blocks to files
+   */
+  async applyCodeBlocks(codeBlocks: CodeBlock[]): Promise<void> {
+    if (!this.codeExtractor || !this.fileModificationService) {
+      throw new Error('Service not initialized');
+    }
+
+    // Extract file operations from code blocks
+    const operations = this.codeExtractor.extractFileOperations(codeBlocks);
+    
+    if (operations.length === 0) {
+      this.log('No file operations to apply');
+      return;
+    }
+
+    this.log(`Applying ${operations.length} file operations`);
+
+    try {
+      // Apply operations with progress
+      await this.fileModificationService.withProgress(
+        'Applying Claude Code changes',
+        async (progress) => {
+          progress.report({ message: `Processing ${operations.length} operations...` });
+          
+          const results = await this.fileModificationService!.applyOperations(operations);
+          
+          const successful = results.filter(r => r.success).length;
+          const failed = results.filter(r => !r.success).length;
+          
+          if (failed > 0) {
+            const errors = results
+              .filter(r => !r.success)
+              .map(r => `${r.filePath}: ${r.error}`)
+              .join('\n');
+            
+            vscode.window.showErrorMessage(
+              `Failed to apply ${failed} operations`,
+              { modal: true, detail: errors }
+            );
+          } else {
+            vscode.window.showInformationMessage(
+              `Successfully applied ${successful} file operations`
+            );
+          }
+        }
+      );
+    } catch (error) {
+      this.handleError('Failed to apply code blocks', error);
+      throw error;
+    }
+  }
+
   async getHealth(): Promise<ServiceHealth> {
     const health: ServiceHealth = {
       subprocess: await this.getSubprocessHealth(),
@@ -345,6 +402,11 @@ export class ClaudeService extends EventEmitter {
           
           // Clean up event listeners
           this.streamingParser!.removeAllListeners('codeBlock');
+          
+          // Emit event with all code blocks for potential application
+          if (codeBlocks.length > 0) {
+            this.emit('codeBlocksReady', codeBlocks);
+          }
           
           resolve(completeResponse);
         }
@@ -569,7 +631,9 @@ export class ClaudeService extends EventEmitter {
     this.streamingParser = new StreamingResponseParser();
     this.responseBuffer = new ResponseBuffer();
     this.markdownParser = new MarkdownParser();
-    this.codeExtractor = new CodeBlockExtractor();
+    this.codeBlockExtractor = new CodeBlockExtractor();
+    this.codeExtractor = new CodeExtractor();
+    this.fileModificationService = new FileModificationService();
   }
   
   private cleanupStreamingComponents(): void {
@@ -585,9 +649,17 @@ export class ClaudeService extends EventEmitter {
       this.markdownParser.dispose();
       this.markdownParser = null;
     }
+    if (this.codeBlockExtractor) {
+      this.codeBlockExtractor.dispose();
+      this.codeBlockExtractor = null;
+    }
     if (this.codeExtractor) {
       this.codeExtractor.dispose();
       this.codeExtractor = null;
+    }
+    if (this.fileModificationService) {
+      this.fileModificationService.dispose();
+      this.fileModificationService = null;
     }
   }
 }
