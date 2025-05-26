@@ -65,7 +65,7 @@ export const MIGRATION_FLAG_KEY = `${SECRET_KEY_PREFIX}.migrated`;
  * Legacy storage locations to check during migration
  */
 export const LEGACY_STORAGE_KEYS = {
-  WORKSPACE_SETTING: 'stagewise.claude.apiKey',
-  USER_SETTING: 'stagewise.claude.apiKey',
+  WORKSPACE_SETTING: 'stagewise-cc.claude.apiKey',
+  USER_SETTING: 'stagewise-cc.claude.apiKey',
   ENV_VARIABLE: 'ANTHROPIC_API_KEY'
 } as const;

@@ -8,7 +8,7 @@ export function registerClaudeInteractionCommands(
 ): void {
   // Send Prompt Command
   const sendPromptCommand = vscode.commands.registerCommand(
-    'stagewise.claude.sendPrompt',
+    'stagewise-cc.claude.sendPrompt',
     async (providedPrompt?: string) => {
       try {
         // Ensure we have a session
@@ -72,7 +72,7 @@ export function registerClaudeInteractionCommands(
 
   // Send Selection to Claude
   const sendSelectionCommand = vscode.commands.registerCommand(
-    'stagewise.claude.sendSelection',
+    'stagewise-cc.claude.sendSelection',
     async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -195,7 +195,7 @@ export function registerClaudeInteractionCommands(
 
   // New Session Command
   const newSessionCommand = vscode.commands.registerCommand(
-    'stagewise.claude.newSession',
+    'stagewise-cc.claude.newSession',
     async () => {
       try {
         const name = await vscode.window.showInputBox({
@@ -223,7 +223,7 @@ export function registerClaudeInteractionCommands(
 
   // Switch Session Command
   const switchSessionCommand = vscode.commands.registerCommand(
-    'stagewise.claude.switchSession',
+    'stagewise-cc.claude.switchSession',
     async () => {
       const sessions = claudeService.getAllSessions();
       if (sessions.length === 0) {
@@ -252,7 +252,7 @@ export function registerClaudeInteractionCommands(
 
   // Clear History Command
   const clearHistoryCommand = vscode.commands.registerCommand(
-    'stagewise.claude.clearHistory',
+    'stagewise-cc.claude.clearHistory',
     async () => {
       const session = claudeService.getCurrentSession();
       if (!session) {
@@ -275,7 +275,7 @@ export function registerClaudeInteractionCommands(
 
   // Show Session History Command
   const showHistoryCommand = vscode.commands.registerCommand(
-    'stagewise.claude.showHistory',
+    'stagewise-cc.claude.showHistory',
     async () => {
       const session = claudeService.getCurrentSession();
       if (!session) {
@@ -356,7 +356,7 @@ export function registerClaudeInteractionCommands(
 
   // Check Health Command
   const checkHealthCommand = vscode.commands.registerCommand(
-    'stagewise.claude.checkHealth',
+    'stagewise-cc.claude.checkHealth',
     async () => {
       try {
         const health = await claudeService.getHealth();

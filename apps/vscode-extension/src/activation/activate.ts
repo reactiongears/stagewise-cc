@@ -58,7 +58,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Register the setupToolbar command
   const setupToolbarCommand = vscode.commands.registerCommand(
-    'stagewise.setupToolbar',
+    'stagewise-cc.setupToolbar',
     setupToolbarHandler,
   );
   context.subscriptions.push(setupToolbarCommand);

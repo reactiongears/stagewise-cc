@@ -1,6 +1,6 @@
-# <img src="https://github.com/stagewise-io/assets/blob/main/media/logo.png?raw=true" alt="stagewise logo" width="48" height="48" style="border-radius: 50%; vertical-align: middle; margin-right: 8px;" /> stagewise
+# <img src="https://github.com/stagewise-io/assets/blob/main/media/logo.png?raw=true" alt="stagewise logo" width="48" height="48" style="border-radius: 50%; vertical-align: middle; margin-right: 8px;" /> stagewise-cc
 
-# Eyesight for your AI-powered Code Editor.
+# Eyesight for your AI-powered Code Editor with Claude Code Integration.
 
 [![VS Code Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/stagewise.stagewise-vscode-extension?label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=stagewise.stagewise-vscode-extension) [![GitHub Repo stars](https://img.shields.io/github/stars/stagewise-io/stagewise)](https://github.com/stagewise-io/stagewise) [![Join us on Discord](https://img.shields.io/discord/1229378372141056010?label=Discord&logo=discord&logoColor=white)](https://discord.gg/gkdGsDYaKA) <!-- [![Build Status](https://img.shields.io/github/actions/workflow/status/stagewise-io/stagewise/ci.yml?branch=main)](https://github.com/stagewise-io/stagewise/actions) -->
 
@@ -10,18 +10,18 @@
 
 ## About the project
 
-**stagewise is a browser toolbar that connects your frontend UI to your code ai agents in your code editor.**
+**stagewise-cc is a browser toolbar that connects your frontend UI to Claude Code in your VS Code editor.**
 
 * 🧠 Select any element(s) in your web app
 * 💬 Leave a comment on it
 * 💡 Let your AI-Agent do the magic
 
-> Perfect for devs tired of pasting folder paths into prompts. stagewise gives your AI real-time, browser-powered context.
+> Perfect for devs tired of pasting folder paths into prompts. stagewise-cc gives your AI real-time, browser-powered context and integrates directly with Claude Code.
 
 
 ## ✨ Features
 
-The stagewise Toolbar makes it incredibly easy to edit your frontend code with AI agents:
+The stagewise-cc Toolbar makes it incredibly easy to edit your frontend code with Claude Code:
 
 * ⚡ Works out of the box
 * 🛠️ Customise using your own configuration file

@@ -19,7 +19,7 @@ export async function callVSCodeAgent(request: PromptRequest): Promise<void> {
 
   try {
     // Execute the send prompt command with the prompt directly
-    await vscode.commands.executeCommand('stagewise.claude.sendPrompt', prompt);
+    await vscode.commands.executeCommand('stagewise-cc.claude.sendPrompt', prompt);
   } catch (error) {
     // If Claude is not configured or there's an error, prompt the user
     const choice = await vscode.window.showErrorMessage(
@@ -29,7 +29,7 @@ export async function callVSCodeAgent(request: PromptRequest): Promise<void> {
     );
     
     if (choice === 'Set up Claude') {
-      await vscode.commands.executeCommand('stagewise.claude.setApiKey');
+      await vscode.commands.executeCommand('stagewise-cc.claude.setApiKey');
     }
   }
 }

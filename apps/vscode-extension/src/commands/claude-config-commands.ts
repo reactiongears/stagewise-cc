@@ -10,7 +10,7 @@ export function registerClaudeConfigCommands(
 ): void {
   // Open Settings Command
   const openSettingsCommand = vscode.commands.registerCommand(
-    'stagewise.claude.openSettings',
+    'stagewise-cc.claude.openSettings',
     () => {
       vscode.commands.executeCommand('workbench.action.openSettings', 'stagewise.claude');
     }
@@ -18,7 +18,7 @@ export function registerClaudeConfigCommands(
 
   // Reset Settings Command
   const resetSettingsCommand = vscode.commands.registerCommand(
-    'stagewise.claude.resetSettings',
+    'stagewise-cc.claude.resetSettings',
     async () => {
       const choice = await vscode.window.showWarningMessage(
         'Are you sure you want to reset Claude settings to defaults?',
@@ -44,7 +44,7 @@ export function registerClaudeConfigCommands(
 
   // Export Configuration Command
   const exportConfigCommand = vscode.commands.registerCommand(
-    'stagewise.claude.exportConfig',
+    'stagewise-cc.claude.exportConfig',
     async () => {
       try {
         const configData = await configService.exportConfiguration();
@@ -71,7 +71,7 @@ export function registerClaudeConfigCommands(
 
   // Import Configuration Command
   const importConfigCommand = vscode.commands.registerCommand(
-    'stagewise.claude.importConfig',
+    'stagewise-cc.claude.importConfig',
     async () => {
       try {
         const openUri = await vscode.window.showOpenDialog({
@@ -95,7 +95,7 @@ export function registerClaudeConfigCommands(
 
   // Save Profile Command
   const saveProfileCommand = vscode.commands.registerCommand(
-    'stagewise.claude.saveProfile',
+    'stagewise-cc.claude.saveProfile',
     async () => {
       const name = await vscode.window.showInputBox({
         prompt: 'Enter a name for this configuration profile',
@@ -125,7 +125,7 @@ export function registerClaudeConfigCommands(
 
   // Load Profile Command
   const loadProfileCommand = vscode.commands.registerCommand(
-    'stagewise.claude.loadProfile',
+    'stagewise-cc.claude.loadProfile',
     async () => {
       const profiles = configService.getProfiles();
       const profileNames = Object.keys(profiles);
@@ -157,7 +157,7 @@ export function registerClaudeConfigCommands(
 
   // Delete Profile Command
   const deleteProfileCommand = vscode.commands.registerCommand(
-    'stagewise.claude.deleteProfile',
+    'stagewise-cc.claude.deleteProfile',
     async () => {
       const profiles = configService.getProfiles();
       const profileNames = Object.keys(profiles);
@@ -192,7 +192,7 @@ export function registerClaudeConfigCommands(
 
   // Quick Configure Command
   const quickConfigureCommand = vscode.commands.registerCommand(
-    'stagewise.claude.quickConfigure',
+    'stagewise-cc.claude.quickConfigure',
     async () => {
       const choices = [
         {

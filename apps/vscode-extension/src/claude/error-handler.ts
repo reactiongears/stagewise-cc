@@ -116,7 +116,7 @@ export class ErrorHandler {
       recover: async (error) => {
         if (this.authService) {
           // Prompt user to re-enter API key
-          await vscode.commands.executeCommand('stagewise.claude.setApiKey');
+          await vscode.commands.executeCommand('stagewise-cc.claude.setApiKey');
         }
       },
       maxAttempts: 3
@@ -272,7 +272,7 @@ export class ErrorHandler {
   
   private shouldReportError(error: ClaudeError): boolean {
     // Only report if telemetry is enabled and error is severe enough
-    const config = vscode.workspace.getConfiguration('stagewise.claude.telemetry');
+    const config = vscode.workspace.getConfiguration('stagewise-cc.claude.telemetry');
     const telemetryEnabled = config.get<boolean>('enabled', false);
     const includeErrors = config.get<boolean>('includeErrorReports', false);
     

@@ -8,7 +8,7 @@ export function registerClaudeAuthCommands(
 ): void {
   // Set API Key Command
   const setApiKeyCommand = vscode.commands.registerCommand(
-    'stagewise.claude.setApiKey',
+    'stagewise-cc.claude.setApiKey',
     async () => {
       try {
         const apiKey = await vscode.window.showInputBox({
@@ -47,7 +47,7 @@ export function registerClaudeAuthCommands(
 
   // Validate API Key Command
   const validateApiKeyCommand = vscode.commands.registerCommand(
-    'stagewise.claude.validateApiKey',
+    'stagewise-cc.claude.validateApiKey',
     async () => {
       try {
         const apiKey = await authService.getApiKey();
@@ -57,7 +57,7 @@ export function registerClaudeAuthCommands(
             'Set API Key'
           ).then(selection => {
             if (selection === 'Set API Key') {
-              vscode.commands.executeCommand('stagewise.claude.setApiKey');
+              vscode.commands.executeCommand('stagewise-cc.claude.setApiKey');
             }
           });
           return;
@@ -92,7 +92,7 @@ export function registerClaudeAuthCommands(
 
   // Remove API Key Command
   const removeApiKeyCommand = vscode.commands.registerCommand(
-    'stagewise.claude.removeApiKey',
+    'stagewise-cc.claude.removeApiKey',
     async () => {
       const confirmation = await vscode.window.showWarningMessage(
         'Are you sure you want to remove your Claude API key?',
@@ -133,7 +133,7 @@ export function registerClaudeAuthCommands(
       case AuthStatus.NOT_CONFIGURED:
         statusBarItem.text = '$(key) Claude: Not Configured';
         statusBarItem.tooltip = 'Click to set API key';
-        statusBarItem.command = 'stagewise.claude.setApiKey';
+        statusBarItem.command = 'stagewise-cc.claude.setApiKey';
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         break;
       
@@ -147,21 +147,21 @@ export function registerClaudeAuthCommands(
       case AuthStatus.VALID:
         statusBarItem.text = '$(check) Claude: Ready';
         statusBarItem.tooltip = 'Click to validate API key';
-        statusBarItem.command = 'stagewise.claude.validateApiKey';
+        statusBarItem.command = 'stagewise-cc.claude.validateApiKey';
         statusBarItem.backgroundColor = undefined;
         break;
       
       case AuthStatus.INVALID:
         statusBarItem.text = '$(error) Claude: Invalid Key';
         statusBarItem.tooltip = 'Click to update API key';
-        statusBarItem.command = 'stagewise.claude.setApiKey';
+        statusBarItem.command = 'stagewise-cc.claude.setApiKey';
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
         break;
       
       case AuthStatus.ERROR:
         statusBarItem.text = '$(warning) Claude: Error';
         statusBarItem.tooltip = 'Click to retry configuration';
-        statusBarItem.command = 'stagewise.claude.setApiKey';
+        statusBarItem.command = 'stagewise-cc.claude.setApiKey';
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
         break;
     }

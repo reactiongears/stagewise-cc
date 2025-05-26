@@ -26,6 +26,10 @@ import { ClaudeResponse } from './types';
 import { PromptTransformer } from './prompt-transformer';
 import { WorkspaceCollector } from './workspace-collector';
 import type { ClaudePromptContext } from './prompt-context';
+import { StreamingResponseParser, CodeBlock } from './streaming-parser';
+import { ResponseBuffer } from './response-buffer';
+import { MarkdownParser } from './markdown-parser';
+import { CodeBlockExtractor } from './code-block-extractor';
 
 export class ClaudeService extends EventEmitter {
   private static instance: ClaudeService;
@@ -34,6 +38,10 @@ export class ClaudeService extends EventEmitter {
   private contextEnricher: ContextEnricherImpl;
   private promptTransformer: PromptTransformer;
   private workspaceCollector: WorkspaceCollector;
+  private streamingParser: StreamingResponseParser | null = null;
+  private responseBuffer: ResponseBuffer | null = null;
+  private markdownParser: MarkdownParser | null = null;
+  private codeExtractor: CodeBlockExtractor | null = null;
   private responseCache: Map<string, ClaudeCompleteResponse> = new Map();
   private isInitialized = false;
   
@@ -48,6 +56,7 @@ export class ClaudeService extends EventEmitter {
     this.contextEnricher = new ContextEnricherImpl(outputChannel);
     this.promptTransformer = new PromptTransformer();
     this.workspaceCollector = WorkspaceCollector.getInstance();
+    this.initializeStreamingComponents();
     this.setupEventHandlers();
   }
   
@@ -212,6 +221,9 @@ export class ClaudeService extends EventEmitter {
       this.subprocess = null;
     }
     
+    // Clean up streaming components
+    this.cleanupStreamingComponents();
+    
     // Clear caches
     this.responseCache.clear();
     
@@ -266,10 +278,24 @@ export class ClaudeService extends EventEmitter {
     return new Promise((resolve, reject) => {
       let fullResponse = '';
       const responseId = this.generateId();
+      const codeBlocks: CodeBlock[] = [];
+      
+      // Reset streaming components
+      this.streamingParser!.reset();
+      this.responseBuffer!.clear();
+      
+      // Set up code block event handler
+      this.streamingParser!.on('codeBlock', (block: CodeBlock) => {
+        codeBlocks.push(block);
+        this.emit('codeBlockDetected', block);
+      });
       
       this.subprocess!.on('data', (response: ClaudeResponse) => {
         if (response.isStreaming) {
+          // Process through streaming parser
+          this.streamingParser!.process(response.content);
           fullResponse += response.content;
+          
           const streamResponse: ClaudeStreamResponse = {
             id: responseId,
             chunk: response.content,
@@ -279,12 +305,16 @@ export class ClaudeService extends EventEmitter {
         } else {
           // Complete response
           fullResponse += response.content;
+          this.streamingParser!.process(response.content);
+          this.streamingParser!.complete();
+          
           const processingTime = Date.now() - startTime;
           
           const metadata: ResponseMetadata = {
             model: this.configService.getConfiguration().model,
             processingTime,
-            cached: false
+            cached: false,
+            codeBlocks: this.streamingParser!.getCompleteBlocks()
           };
           
           const completeResponse: ClaudeCompleteResponse = {
@@ -301,7 +331,8 @@ export class ClaudeService extends EventEmitter {
             content: fullResponse,
             metadata: {
               model: metadata.model,
-              processingTime: metadata.processingTime
+              processingTime: metadata.processingTime,
+              codeBlocksCount: codeBlocks.length
             }
           };
           session.history.push(assistantEntry);
@@ -311,6 +342,9 @@ export class ClaudeService extends EventEmitter {
             const cacheKey = this.getCacheKey(prompt, session.context);
             this.responseCache.set(cacheKey, completeResponse);
           }
+          
+          // Clean up event listeners
+          this.streamingParser!.removeAllListeners('codeBlock');
           
           resolve(completeResponse);
         }
@@ -529,6 +563,32 @@ export class ClaudeService extends EventEmitter {
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] [SERVICE] [${level.toUpperCase()}] ${message}`;
     this.outputChannel.appendLine(logMessage);
+  }
+  
+  private initializeStreamingComponents(): void {
+    this.streamingParser = new StreamingResponseParser();
+    this.responseBuffer = new ResponseBuffer();
+    this.markdownParser = new MarkdownParser();
+    this.codeExtractor = new CodeBlockExtractor();
+  }
+  
+  private cleanupStreamingComponents(): void {
+    if (this.streamingParser) {
+      this.streamingParser.dispose();
+      this.streamingParser = null;
+    }
+    if (this.responseBuffer) {
+      this.responseBuffer.dispose();
+      this.responseBuffer = null;
+    }
+    if (this.markdownParser) {
+      this.markdownParser.dispose();
+      this.markdownParser = null;
+    }
+    if (this.codeExtractor) {
+      this.codeExtractor.dispose();
+      this.codeExtractor = null;
+    }
   }
 }
 

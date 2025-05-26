@@ -12,7 +12,7 @@ import { DEFAULT_CONFIGURATION, CONFIGURATION_METADATA } from './config-defaults
 
 export class ClaudeConfigService extends EventEmitter {
   private static readonly CONFIG_PREFIX = 'stagewise.claude';
-  private static readonly PROFILES_KEY = 'stagewise.claude.profiles';
+  private static readonly PROFILES_KEY = 'stagewise-cc.claude.profiles';
   private currentConfig: ClaudeConfiguration;
   private disposables: vscode.Disposable[] = [];
   

@@ -197,7 +197,7 @@ export class LifecycleManager {
   private registerLifecycleCommands(): void {
     // Restart command
     const restartCommand = vscode.commands.registerCommand(
-      'stagewise.claude.restart',
+      'stagewise-cc.claude.restart',
       async () => {
         try {
           vscode.window.showInformationMessage('Restarting Claude service...');
@@ -211,7 +211,7 @@ export class LifecycleManager {
     
     // Show logs command
     const showLogsCommand = vscode.commands.registerCommand(
-      'stagewise.claude.showLogs',
+      'stagewise-cc.claude.showLogs',
       () => {
         this.state.components.outputChannel?.show();
       }
@@ -219,7 +219,7 @@ export class LifecycleManager {
     
     // Clear logs command
     const clearLogsCommand = vscode.commands.registerCommand(
-      'stagewise.claude.clearLogs',
+      'stagewise-cc.claude.clearLogs',
       () => {
         this.state.components.outputChannel?.clear();
         vscode.window.showInformationMessage('Claude logs cleared');
@@ -228,7 +228,7 @@ export class LifecycleManager {
     
     // Show error metrics command
     const showMetricsCommand = vscode.commands.registerCommand(
-      'stagewise.claude.showErrorMetrics',
+      'stagewise-cc.claude.showErrorMetrics',
       () => {
         const metrics = this.state.components.errorHandler?.getMetrics();
         if (metrics) {
@@ -298,7 +298,7 @@ export class LifecycleManager {
       'Open Documentation'
     ).then(selection => {
       if (selection === 'Set API Key') {
-        vscode.commands.executeCommand('stagewise.claude.setApiKey');
+        vscode.commands.executeCommand('stagewise-cc.claude.setApiKey');
       } else if (selection === 'Open Documentation') {
         vscode.env.openExternal(vscode.Uri.parse('https://docs.claude.ai/vscode'));
       }
@@ -312,7 +312,7 @@ export class LifecycleManager {
       'Later'
     ).then(selection => {
       if (selection === 'Set API Key') {
-        vscode.commands.executeCommand('stagewise.claude.setApiKey');
+        vscode.commands.executeCommand('stagewise-cc.claude.setApiKey');
       }
     });
   }

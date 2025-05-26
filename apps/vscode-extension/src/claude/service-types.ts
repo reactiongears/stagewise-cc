@@ -21,6 +21,7 @@ export interface EntryMetadata {
   processingTime?: number;
   error?: string;
   context?: ContextSnapshot;
+  codeBlocksCount?: number;
 }
 
 export interface SessionContext {
@@ -141,6 +142,7 @@ export interface ResponseMetadata {
   };
   processingTime: number;
   cached?: boolean;
+  codeBlocks?: any[]; // TODO: Import CodeBlock type from streaming-parser
 }
 
 export interface ServiceHealth {
