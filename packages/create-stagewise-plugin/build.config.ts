@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 import { defineBuildConfig } from 'unbuild';
-import { execSync } from 'node:child_process';
+// import { execSync } from 'node:child_process'; // Unused after removing getLatestVersion
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -20,14 +20,15 @@ function copyRecursiveSync(src: string, dest: string) {
   }
 }
 
-function getLatestVersion(pkg: string) {
-  try {
-    return execSync(`npm view ${pkg} version`).toString().trim();
-  } catch (e) {
-    console.error(`Could not fetch latest version for ${pkg}`);
-    return null;
-  }
-}
+// Unused function - removed
+// function getLatestVersion(pkg: string) {
+//   try {
+//     return execSync(`npm view ${pkg} version`).toString().trim();
+//   } catch (e) {
+//     console.error(`Could not fetch latest version for ${pkg}`);
+//     return null;
+//   }
+// }
 
 function getLocalToolbarVersion() {
   // Adjust the path if your toolbar package is elsewhere

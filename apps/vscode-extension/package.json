@@ -19,12 +19,198 @@
         "command": "stagewise.setupToolbar",
         "title": "Auto-setup the stagewise toolbar (AI-Assisted)",
         "category": "stagewise"
+      },
+      {
+        "command": "stagewise.claude.setApiKey",
+        "title": "Set Claude API Key",
+        "category": "Claude"
+      },
+      {
+        "command": "stagewise.claude.validateApiKey",
+        "title": "Validate Claude API Key",
+        "category": "Claude"
+      },
+      {
+        "command": "stagewise.claude.removeApiKey",
+        "title": "Remove Claude API Key",
+        "category": "Claude"
+      },
+      {
+        "command": "stagewise.claude.openSettings",
+        "title": "Open Claude Settings",
+        "category": "Claude"
+      },
+      {
+        "command": "stagewise.claude.resetSettings",
+        "title": "Reset Claude Settings to Defaults",
+        "category": "Claude"
+      },
+      {
+        "command": "stagewise.claude.sendPrompt",
+        "title": "Send Prompt to Claude",
+        "category": "Claude"
+      },
+      {
+        "command": "stagewise.claude.newSession",
+        "title": "Start New Claude Session",
+        "category": "Claude"
+      },
+      {
+        "command": "stagewise.claude.clearHistory",
+        "title": "Clear Claude History",
+        "category": "Claude"
       }
     ],
     "configuration": {
       "title": "stagewise",
       "type": "object",
-      "properties": {}
+      "properties": {
+        "stagewise.claude.model": {
+          "type": "string",
+          "default": "claude-3-5-sonnet-20241022",
+          "enum": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "claude-3-5-sonnet-20241022"],
+          "enumDescriptions": [
+            "Claude 3 Opus - Most capable model for complex tasks",
+            "Claude 3 Sonnet - Balanced performance and speed",
+            "Claude 3 Haiku - Fastest model for simple tasks",
+            "Claude 3.5 Sonnet - Latest model with improved capabilities"
+          ],
+          "description": "The Claude model to use for AI assistance"
+        },
+        "stagewise.claude.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Controls randomness in responses (0 = deterministic, 1 = creative)"
+        },
+        "stagewise.claude.maxTokens": {
+          "type": "number",
+          "default": 4096,
+          "minimum": 1,
+          "maximum": 100000,
+          "description": "Maximum number of tokens in Claude responses"
+        },
+        "stagewise.claude.streamResponses": {
+          "type": "boolean",
+          "default": true,
+          "description": "Stream responses as they are generated"
+        },
+        "stagewise.claude.autoSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically save conversation history"
+        },
+        "stagewise.claude.contextWindow.maxSize": {
+          "type": "number",
+          "default": 100000,
+          "minimum": 1000,
+          "maximum": 200000,
+          "description": "Maximum size of context window in characters"
+        },
+        "stagewise.claude.contextWindow.includeWorkspaceContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include workspace information in context"
+        },
+        "stagewise.claude.contextWindow.includeFileContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include current file content in context"
+        },
+        "stagewise.claude.contextWindow.includeDomContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include DOM element context from browser"
+        },
+        "stagewise.claude.contextWindow.filePatterns": {
+          "type": "array",
+          "default": ["**/*.{ts,tsx,js,jsx,py,java,cpp,c,h,go,rs,rb,php,swift,kt,scala,r,m,dart}"],
+          "description": "File patterns to include in context"
+        },
+        "stagewise.claude.contextWindow.excludePatterns": {
+          "type": "array",
+          "default": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/.git/**", "**/vendor/**"],
+          "description": "File patterns to exclude from context"
+        },
+        "stagewise.claude.showInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Claude status in the status bar"
+        },
+        "stagewise.claude.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notification messages"
+        },
+        "stagewise.claude.outputChannelLevel": {
+          "type": "string",
+          "default": "info",
+          "enum": ["error", "warning", "info", "debug", "trace"],
+          "description": "Logging level for the output channel"
+        },
+        "stagewise.claude.timeout": {
+          "type": "number",
+          "default": 120000,
+          "minimum": 10000,
+          "maximum": 600000,
+          "description": "Request timeout in milliseconds"
+        },
+        "stagewise.claude.maxRetries": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Maximum number of retry attempts"
+        },
+        "stagewise.claude.cacheResponses": {
+          "type": "boolean",
+          "default": true,
+          "description": "Cache Claude responses for faster repeated queries"
+        },
+        "stagewise.claude.cacheDuration": {
+          "type": "number",
+          "default": 3600000,
+          "minimum": 0,
+          "maximum": 86400000,
+          "description": "Cache duration in milliseconds"
+        },
+        "stagewise.claude.telemetry.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable telemetry data collection (opt-in)"
+        },
+        "stagewise.claude.telemetry.includeUsageMetrics": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include usage metrics in telemetry"
+        },
+        "stagewise.claude.telemetry.includeErrorReports": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include error reports in telemetry"
+        },
+        "stagewise.claude.telemetry.anonymizeData": {
+          "type": "boolean",
+          "default": true,
+          "description": "Anonymize telemetry data before sending"
+        },
+        "stagewise.claude.experimental.enableBetaFeatures": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable experimental beta features"
+        },
+        "stagewise.claude.experimental.customEndpoint": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Custom API endpoint (advanced users only)"
+        },
+        "stagewise.claude.experimental.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug mode with verbose logging"
+        }
+      }
     }
   },
   "homepage": "https://stagewise.io",

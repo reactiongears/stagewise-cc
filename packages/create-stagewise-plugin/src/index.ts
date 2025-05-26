@@ -4,9 +4,7 @@ import { fileURLToPath } from 'node:url';
 import spawn from 'cross-spawn';
 import mri from 'mri';
 import * as prompts from '@clack/prompts';
-import colors from 'picocolors';
-
-const { yellow } = colors;
+// import colors from 'picocolors'; // Unused
 const argv = mri(process.argv.slice(2), {
   alias: { h: 'help' },
   boolean: ['help', 'overwrite'],
