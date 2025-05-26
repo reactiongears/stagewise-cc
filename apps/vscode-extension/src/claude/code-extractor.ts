@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Logger } from './logger';
-import { CodeBlock } from './streaming-parser';
+import type { CodeBlock } from './streaming-parser';
 
 /**
  * Types of file operations
  */
 export enum OperationType {
-  CREATE = 'create',      // New file creation
-  UPDATE = 'update',      // Modify existing file
-  DELETE = 'delete',      // Remove file
-  MOVE = 'move',          // Rename/move file
-  APPEND = 'append'       // Add to end of file
+  CREATE = 'create', // New file creation
+  UPDATE = 'update', // Modify existing file
+  DELETE = 'delete', // Remove file
+  MOVE = 'move', // Rename/move file
+  APPEND = 'append', // Add to end of file
 }
 
 /**
@@ -55,9 +55,9 @@ export interface ValidationResult {
  * Risk level assessment
  */
 export enum RiskLevel {
-  LOW = 'low',        // Safe operation
-  MEDIUM = 'medium',  // Requires review
-  HIGH = 'high'       // Potentially dangerous
+  LOW = 'low', // Safe operation
+  MEDIUM = 'medium', // Requires review
+  HIGH = 'high', // Potentially dangerous
 }
 
 /**
@@ -69,9 +69,12 @@ export class CodeExtractor {
   private workspaceRoot: string;
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Code Extractor');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Code Extractor',
+    );
     this.logger = new Logger(this.outputChannel);
-    this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    this.workspaceRoot =
+      vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   }
 
   /**
@@ -134,11 +137,17 @@ export class CodeExtractor {
 
     if (content.includes('create new file') || description.includes('create')) {
       return OperationType.CREATE;
-    } else if (content.includes('delete file') || description.includes('delete')) {
+    } else if (
+      content.includes('delete file') ||
+      description.includes('delete')
+    ) {
       return OperationType.DELETE;
     } else if (content.includes('rename') || description.includes('move')) {
       return OperationType.MOVE;
-    } else if (content.includes('append') || description.includes('add to end')) {
+    } else if (
+      content.includes('append') ||
+      description.includes('add to end')
+    ) {
       return OperationType.APPEND;
     }
 
@@ -167,7 +176,9 @@ export class CodeExtractor {
   /**
    * Group code blocks by target file
    */
-  private groupBlocksByFile(blocks: CodeBlock[]): Map<string | undefined, CodeBlock[]> {
+  private groupBlocksByFile(
+    blocks: CodeBlock[],
+  ): Map<string | undefined, CodeBlock[]> {
     const groups = new Map<string | undefined, CodeBlock[]>();
 
     for (const block of blocks) {
@@ -183,7 +194,10 @@ export class CodeExtractor {
   /**
    * Create a file operation from blocks
    */
-  private createFileOperation(filePath: string, blocks: CodeBlock[]): FileOperation | null {
+  private createFileOperation(
+    filePath: string,
+    blocks: CodeBlock[],
+  ): FileOperation | null {
     if (blocks.length === 0) return null;
 
     const primaryBlock = blocks[0];
@@ -192,7 +206,9 @@ export class CodeExtractor {
     // Combine content from multiple blocks if needed
     let content = '';
     if (operationType !== OperationType.DELETE) {
-      content = blocks.map(block => this.extractCodeContent(block)).join('\n\n');
+      content = blocks
+        .map((block) => this.extractCodeContent(block))
+        .join('\n\n');
     }
 
     const operation: FileOperation = {
@@ -204,8 +220,8 @@ export class CodeExtractor {
         description: primaryBlock.metadata?.description,
         language: primaryBlock.language,
         timestamp: new Date(),
-        affectedFiles: [filePath]
-      }
+        affectedFiles: [filePath],
+      },
     };
 
     // Add line range if specified
@@ -242,7 +258,9 @@ export class CodeExtractor {
     const language = block.language;
 
     // Look for file path comments
-    const filePathComment = code.match(/(?:\/\/|#|\/\*)\s*(?:file|File|FILE):\s*([^\s\n]+)/);
+    const filePathComment = code.match(
+      /(?:\/\/|#|\/\*)\s*(?:file|File|FILE):\s*([^\s\n]+)/,
+    );
     if (filePathComment) {
       return this.resolveFilePath(filePathComment[1]);
     }
@@ -250,7 +268,9 @@ export class CodeExtractor {
     // Look for module/class declarations
     if (language === 'typescript' || language === 'javascript') {
       // Look for export statements that might indicate file name
-      const exportMatch = code.match(/export\s+(?:default\s+)?(?:class|function|const)\s+(\w+)/);
+      const exportMatch = code.match(
+        /export\s+(?:default\s+)?(?:class|function|const)\s+(\w+)/,
+      );
       if (exportMatch) {
         const name = exportMatch[1];
         const extension = language === 'typescript' ? '.ts' : '.js';
@@ -267,7 +287,9 @@ export class CodeExtractor {
   private findFileByName(name: string, extension: string): string | undefined {
     // This would need to search the workspace for matching files
     // For now, return undefined to indicate manual path needed
-    this.logger.debug(`Could not automatically locate file for ${name}${extension}`);
+    this.logger.debug(
+      `Could not automatically locate file for ${name}${extension}`,
+    );
     return undefined;
   }
 
@@ -300,7 +322,7 @@ export class CodeExtractor {
       /\/\/\s*DELETE.*:.*$/gm,
       /\/\/\s*Update.*$/gm,
       /\/\/\s*Create.*$/gm,
-      /\/\/\s*Add.*$/gm
+      /\/\/\s*Add.*$/gm,
     ];
 
     let cleaned = code;
@@ -322,7 +344,7 @@ export class CodeExtractor {
     if (lines.length === 0) return code;
 
     // Find the minimum indentation (excluding empty lines)
-    let minIndent = Infinity;
+    let minIndent = Number.POSITIVE_INFINITY;
     for (const line of lines) {
       if (line.trim()) {
         const leadingSpaces = line.match(/^(\s*)/)?.[1].length || 0;
@@ -331,13 +353,15 @@ export class CodeExtractor {
     }
 
     // Remove the minimum indentation from all lines
-    if (minIndent > 0 && minIndent < Infinity) {
-      return lines.map(line => {
-        if (line.trim()) {
-          return line.substring(minIndent);
-        }
-        return line;
-      }).join('\n');
+    if (minIndent > 0 && minIndent < Number.POSITIVE_INFINITY) {
+      return lines
+        .map((line) => {
+          if (line.trim()) {
+            return line.substring(minIndent);
+          }
+          return line;
+        })
+        .join('\n');
     }
 
     return code;
@@ -355,7 +379,9 @@ export class CodeExtractor {
 
     // Check if code appears to be incomplete
     if (this.isIncompleteCode(content)) {
-      this.logger.warning(`Code block appears incomplete for ${block.filePath || 'unknown file'}`);
+      this.logger.warning(
+        `Code block appears incomplete for ${block.filePath || 'unknown file'}`,
+      );
     }
 
     return content;
@@ -373,22 +399,26 @@ export class CodeExtractor {
     const openBrackets = (code.match(/\[/g) || []).length;
     const closeBrackets = (code.match(/\]/g) || []).length;
 
-    return openBraces !== closeBraces || 
-           openParens !== closeParens || 
-           openBrackets !== closeBrackets;
+    return (
+      openBraces !== closeBraces ||
+      openParens !== closeParens ||
+      openBrackets !== closeBrackets
+    );
   }
 
   /**
    * Sort operations by dependency order
    */
-  private sortOperationsByDependency(operations: FileOperation[]): FileOperation[] {
+  private sortOperationsByDependency(
+    operations: FileOperation[],
+  ): FileOperation[] {
     // Simple sort: CREATE before UPDATE before DELETE
     const priority: Record<OperationType, number> = {
       [OperationType.CREATE]: 1,
       [OperationType.MOVE]: 2,
       [OperationType.UPDATE]: 3,
       [OperationType.APPEND]: 4,
-      [OperationType.DELETE]: 5
+      [OperationType.DELETE]: 5,
     };
 
     return operations.sort((a, b) => {

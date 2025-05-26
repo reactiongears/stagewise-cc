@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { StreamingResponseParser } from './streaming-parser';
-import { CodeExtractor, FileOperation } from './code-extractor';
-import { CodeBlock } from './streaming-parser';
+import { CodeExtractor, type FileOperation } from './code-extractor';
+import type { CodeBlock } from './streaming-parser';
 import { FileModificationService } from './file-modification-service';
 import { DiffPreviewService } from './diff-preview';
 import { UserConfirmationService, UserDecision } from './user-confirmation';
@@ -38,12 +38,13 @@ export class ClaudeIntegration {
   private diffPreviewService: DiffPreviewService;
   private userConfirmationService: UserConfirmationService;
   private config: ClaudeIntegrationConfig;
-  private isProcessing: boolean = false;
+  private isProcessing = false;
 
   constructor(config: ClaudeIntegrationConfig = {}) {
-    const outputChannel = vscode.window.createOutputChannel('Claude Integration');
+    const outputChannel =
+      vscode.window.createOutputChannel('Claude Integration');
     this.logger = new Logger(outputChannel);
-    
+
     // Initialize services
     this.streamingParser = new StreamingResponseParser();
     this.codeExtractor = new CodeExtractor();
@@ -52,15 +53,15 @@ export class ClaudeIntegration {
     this.userConfirmationService = new UserConfirmationService({
       autoAcceptLowRisk: config.autoApplyLowRisk,
       alwaysShowDiff: config.alwaysShowDiff,
-      confirmDestructive: config.confirmDestructive
+      confirmDestructive: config.confirmDestructive,
     });
-    
+
     this.config = {
       autoApplyLowRisk: config.autoApplyLowRisk ?? false,
       alwaysShowDiff: config.alwaysShowDiff ?? false,
       confirmDestructive: config.confirmDestructive ?? true,
       enableBackups: config.enableBackups ?? true,
-      streamingEnabled: config.streamingEnabled ?? true
+      streamingEnabled: config.streamingEnabled ?? true,
     };
 
     this.setupEventListeners();
@@ -71,7 +72,9 @@ export class ClaudeIntegration {
    */
   async processClaudeResponse(response: ClaudeResponseEvent): Promise<void> {
     if (this.isProcessing) {
-      this.logger.warning('Already processing a response, ignoring new request');
+      this.logger.warning(
+        'Already processing a response, ignoring new request',
+      );
       return;
     }
 
@@ -96,11 +99,10 @@ export class ClaudeIntegration {
 
       // Process complete response
       await this.processCompleteResponse(fullContent);
-
     } catch (error) {
       this.logger.error('Failed to process Claude response', error);
       vscode.window.showErrorMessage(
-        `Failed to process Claude response: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to process Claude response: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     } finally {
       this.isProcessing = false;
@@ -138,10 +140,11 @@ export class ClaudeIntegration {
       const preview = await this.diffPreviewService.generatePreview(operations);
 
       // Request user confirmation
-      const confirmation = await this.userConfirmationService.requestConfirmation(
-        operations,
-        preview
-      );
+      const confirmation =
+        await this.userConfirmationService.requestConfirmation(
+          operations,
+          preview,
+        );
 
       // Handle user decision
       switch (confirmation.decision) {
@@ -151,8 +154,8 @@ export class ClaudeIntegration {
 
         case UserDecision.ACCEPT_SELECTED:
           if (confirmation.selectedOperations) {
-            const selected = operations.filter(op => 
-              confirmation.selectedOperations!.includes(op.id)
+            const selected = operations.filter((op) =>
+              confirmation.selectedOperations!.includes(op.id),
             );
             await this.applyAllOperations(selected);
           }
@@ -167,11 +170,10 @@ export class ClaudeIntegration {
           this.logger.info('User cancelled operation');
           break;
       }
-
     } catch (error) {
       this.logger.error('Failed to apply operations', error);
       vscode.window.showErrorMessage(
-        `Failed to apply operations: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to apply operations: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -181,32 +183,35 @@ export class ClaudeIntegration {
    */
   private async applyAllOperations(operations: FileOperation[]): Promise<void> {
     const startTime = Date.now();
-    
-    vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title: 'Applying Claude Code changes',
-      cancellable: false
-    }, async (progress) => {
-      progress.report({ increment: 0, message: 'Starting...' });
 
-      try {
-        const results = await this.fileModificationService.applyOperations(operations);
-        
-        const successful = results.filter(r => r.success).length;
-        const failed = results.filter(r => !r.success).length;
-        
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-        
-        await this.userConfirmationService.showOperationResult(
-          failed === 0,
-          successful,
-          `Completed in ${duration}s${failed > 0 ? ` (${failed} failed)` : ''}`
-        );
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'Applying Claude Code changes',
+        cancellable: false,
+      },
+      async (progress) => {
+        progress.report({ increment: 0, message: 'Starting...' });
 
-      } catch (error) {
-        throw error;
-      }
-    });
+        try {
+          const results =
+            await this.fileModificationService.applyOperations(operations);
+
+          const successful = results.filter((r) => r.success).length;
+          const failed = results.filter((r) => !r.success).length;
+
+          const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+          await this.userConfirmationService.showOperationResult(
+            failed === 0,
+            successful,
+            `Completed in ${duration}s${failed > 0 ? ` (${failed} failed)` : ''}`,
+          );
+        } catch (error) {
+          throw error;
+        }
+      },
+    );
   }
 
   /**
@@ -216,11 +221,11 @@ export class ClaudeIntegration {
     // Listen for code blocks from streaming parser
     this.streamingParser.on('codeBlock', async (codeBlock) => {
       this.logger.debug('Received code block from streaming parser');
-      
+
       // Extract operations from the code block
       // Extract operations from the single code block
       const operations = this.codeExtractor.extractFileOperations([codeBlock]);
-      
+
       if (operations.length > 0) {
         // Queue operations for processing when streaming completes
         this.queueOperations(operations);
@@ -268,18 +273,19 @@ export class ClaudeIntegration {
    */
   private parseCodeBlocks(content: string): CodeBlock[] {
     const blocks: CodeBlock[] = [];
-    const codeBlockRegex = /```(\w+)?\s*(?:(?:\/\/|#)\s*(.+?)\n)?([\s\S]*?)```/g;
-    
+    const codeBlockRegex =
+      /```(\w+)?\s*(?:(?:\/\/|#)\s*(.+?)\n)?([\s\S]*?)```/g;
+
     let match;
     while ((match = codeBlockRegex.exec(content)) !== null) {
       blocks.push({
         language: match[1] || 'plaintext',
         filePath: match[2],
         code: match[3].trim(),
-        operation: 'unknown'
+        operation: 'unknown',
       });
     }
-    
+
     return blocks;
   }
 
@@ -289,21 +295,21 @@ export class ClaudeIntegration {
   async handleSSEEvent(event: MessageEvent): Promise<void> {
     try {
       const data = JSON.parse(event.data);
-      
+
       if (data.type === 'claude-response') {
         await this.processClaudeResponse({
           type: 'chunk',
-          data: data.content
+          data: data.content,
         });
       } else if (data.type === 'claude-complete') {
         await this.processClaudeResponse({
           type: 'complete',
-          data: data.fullContent
+          data: data.fullContent,
         });
       } else if (data.type === 'error') {
         await this.processClaudeResponse({
           type: 'error',
-          error: new Error(data.message)
+          error: new Error(data.message),
         });
       }
     } catch (error) {
@@ -316,12 +322,12 @@ export class ClaudeIntegration {
    */
   updateConfig(config: Partial<ClaudeIntegrationConfig>): void {
     this.config = { ...this.config, ...config };
-    
+
     // Update service configurations
     this.userConfirmationService.updateConfig({
       autoAcceptLowRisk: config.autoApplyLowRisk,
       alwaysShowDiff: config.alwaysShowDiff,
-      confirmDestructive: config.confirmDestructive
+      confirmDestructive: config.confirmDestructive,
     });
   }
 

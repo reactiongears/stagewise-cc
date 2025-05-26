@@ -3,26 +3,26 @@ export interface ClaudeConfiguration {
   model: ClaudeModel;
   temperature: number;
   maxTokens: number;
-  
+
   // Behavior settings
   streamResponses: boolean;
   autoSave: boolean;
   contextWindow: ContextWindowConfig;
-  
+
   // UI settings
   showInStatusBar: boolean;
   showNotifications: boolean;
   outputChannelLevel: LogLevel;
-  
+
   // Performance settings
   timeout: number;
   maxRetries: number;
   cacheResponses: boolean;
   cacheDuration: number;
-  
+
   // Privacy settings
   telemetry: TelemetryConfig;
-  
+
   // Advanced settings
   customHeaders?: Record<string, string>;
   proxy?: ProxyConfig;
@@ -35,7 +35,7 @@ export enum ClaudeModel {
   CLAUDE_3_HAIKU = 'claude-3-haiku-20240307',
   CLAUDE_3_5_SONNET = 'claude-3-5-sonnet-20241022',
   CLAUDE_4_OPUS = 'claude-4-opus-20250115',
-  CLAUDE_4_SONNET = 'claude-4-sonnet-20250115'
+  CLAUDE_4_SONNET = 'claude-4-sonnet-20250115',
 }
 
 export interface ContextWindowConfig {
@@ -52,7 +52,7 @@ export enum LogLevel {
   WARNING = 'warning',
   INFO = 'info',
   DEBUG = 'debug',
-  TRACE = 'trace'
+  TRACE = 'trace',
 }
 
 export interface TelemetryConfig {
@@ -99,7 +99,7 @@ export interface ConfigurationError {
 export enum ConfigurationScope {
   WORKSPACE = 'workspace',
   USER = 'user',
-  DEFAULT = 'default'
+  DEFAULT = 'default',
 }
 
 export interface ConfigurationChangeEvent {

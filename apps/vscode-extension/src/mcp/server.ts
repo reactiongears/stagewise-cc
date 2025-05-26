@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
-import { registerConsoleLogsTool } from './tools';
+import { registerAllTools } from './tools';
 import { MCP_SERVER_NAME, MCP_SERVER_VERSION } from '../constants';
 
 export function createMcpServer() {
@@ -16,7 +16,8 @@ export function createMcpServer() {
     },
   });
 
-  registerConsoleLogsTool(mcpServer);
+  // Register all available tools
+  registerAllTools(mcpServer);
 
   return mcpServer;
 }

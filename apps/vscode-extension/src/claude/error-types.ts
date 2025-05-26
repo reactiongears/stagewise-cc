@@ -7,14 +7,14 @@ export enum ErrorCategory {
   VALIDATION = 'validation',
   SYSTEM = 'system',
   USER = 'user',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 export enum ErrorSeverity {
   CRITICAL = 'critical',
   ERROR = 'error',
   WARNING = 'warning',
-  INFO = 'info'
+  INFO = 'info',
 }
 
 export interface ClaudeError extends Error {
@@ -44,7 +44,7 @@ export class BaseClaudeError extends Error implements ClaudeError {
     message: string,
     category: ErrorCategory,
     severity: ErrorSeverity,
-    options?: Partial<ClaudeError>
+    options?: Partial<ClaudeError>,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -67,9 +67,9 @@ export class AuthenticationError extends BaseClaudeError {
       suggestions: [
         'Check your API key configuration',
         'Ensure your API key is valid and not expired',
-        'Run "Claude: Set API Key" command'
+        'Run "Claude: Set API Key" command',
       ],
-      ...options
+      ...options,
     });
   }
 }
@@ -80,9 +80,9 @@ export class ConfigurationError extends BaseClaudeError {
       suggestions: [
         'Check your Claude settings',
         'Reset to default configuration',
-        'Review the configuration documentation'
+        'Review the configuration documentation',
       ],
-      ...options
+      ...options,
     });
   }
 }
@@ -93,9 +93,9 @@ export class SubprocessError extends BaseClaudeError {
       suggestions: [
         'Check if Claude CLI is installed',
         'Restart the Claude service',
-        'Check the output channel for details'
+        'Check the output channel for details',
       ],
-      ...options
+      ...options,
     });
   }
 }
@@ -107,25 +107,31 @@ export class NetworkError extends BaseClaudeError {
       suggestions: [
         'Check your internet connection',
         'Verify proxy settings if applicable',
-        'Try again in a few moments'
+        'Try again in a few moments',
       ],
-      ...options
+      ...options,
     });
   }
 }
 
 export class APIError extends BaseClaudeError {
-  constructor(message: string, statusCode?: number, options?: Partial<ClaudeError>) {
-    const severity = statusCode === 429 ? ErrorSeverity.WARNING : ErrorSeverity.ERROR;
-    const suggestions = statusCode === 429
-      ? ['You have hit the rate limit', 'Wait a moment before trying again']
-      : ['Check the API documentation', 'Verify your request parameters'];
+  constructor(
+    message: string,
+    statusCode?: number,
+    options?: Partial<ClaudeError>,
+  ) {
+    const severity =
+      statusCode === 429 ? ErrorSeverity.WARNING : ErrorSeverity.ERROR;
+    const suggestions =
+      statusCode === 429
+        ? ['You have hit the rate limit', 'Wait a moment before trying again']
+        : ['Check the API documentation', 'Verify your request parameters'];
 
     super(message, ErrorCategory.API, severity, {
       code: statusCode?.toString(),
       recoverable: statusCode !== 401,
       suggestions,
-      ...options
+      ...options,
     });
   }
 }
@@ -137,9 +143,9 @@ export class ValidationError extends BaseClaudeError {
       suggestions: [
         'Check the input format',
         'Review the validation requirements',
-        'Consult the documentation for valid values'
+        'Consult the documentation for valid values',
       ],
-      ...options
+      ...options,
     });
   }
 }
@@ -151,9 +157,9 @@ export class SystemError extends BaseClaudeError {
       suggestions: [
         'Restart VSCode',
         'Check system resources',
-        'Report this issue if it persists'
+        'Report this issue if it persists',
       ],
-      ...options
+      ...options,
     });
   }
 }
@@ -162,7 +168,7 @@ export class UserError extends BaseClaudeError {
   constructor(message: string, options?: Partial<ClaudeError>) {
     super(message, ErrorCategory.USER, ErrorSeverity.INFO, {
       recoverable: true,
-      ...options
+      ...options,
     });
   }
 }

@@ -1,14 +1,13 @@
 import { Logger } from './logger';
 import * as vscode from 'vscode';
-import {
+import type {
   FileDiff,
   DiffPreview,
   SideBySideView,
-  SideContent,
   SideLine,
   InlineView,
   InlineLine,
-  DiffChange
+  DiffChange,
 } from './diff-types';
 
 /**
@@ -19,7 +18,9 @@ export class DiffFormatter {
   private outputChannel: vscode.OutputChannel;
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Diff Formatter');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Diff Formatter',
+    );
     this.logger = new Logger(this.outputChannel);
   }
 
@@ -28,7 +29,7 @@ export class DiffFormatter {
    */
   formatUnified(diff: FileDiff): string {
     let output = '';
-    
+
     // File header
     output += `--- a/${diff.path}\n`;
     output += `+++ b/${diff.path}\n`;
@@ -37,12 +38,12 @@ export class DiffFormatter {
     for (const hunk of diff.hunks) {
       // Hunk header
       const oldStart = hunk.startLine;
-      const oldLength = hunk.changes.filter(c => c.type !== 'add').length;
+      const oldLength = hunk.changes.filter((c) => c.type !== 'add').length;
       const newStart = hunk.startLine;
-      const newLength = hunk.changes.filter(c => c.type !== 'delete').length;
-      
+      const newLength = hunk.changes.filter((c) => c.type !== 'delete').length;
+
       output += `@@ -${oldStart},${oldLength} +${newStart},${newLength} @@`;
-      
+
       // Add context if available
       if (hunk.context) {
         output += ` ${hunk.context}`;
@@ -77,12 +78,12 @@ export class DiffFormatter {
             leftLines.push({
               lineNumber: leftLineNumber++,
               content: change.content,
-              type: 'normal'
+              type: 'normal',
             });
             rightLines.push({
               lineNumber: rightLineNumber++,
               content: change.content,
-              type: 'normal'
+              type: 'normal',
             });
             break;
 
@@ -91,24 +92,24 @@ export class DiffFormatter {
               lineNumber: leftLineNumber++,
               content: change.content,
               type: 'deleted',
-              highlight: true
+              highlight: true,
             });
             rightLines.push({
               content: '',
-              type: 'empty'
+              type: 'empty',
             });
             break;
 
           case 'add':
             leftLines.push({
               content: '',
-              type: 'empty'
+              type: 'empty',
             });
             rightLines.push({
               lineNumber: rightLineNumber++,
               content: change.content,
               type: 'added',
-              highlight: true
+              highlight: true,
             });
             break;
 
@@ -117,13 +118,13 @@ export class DiffFormatter {
               lineNumber: leftLineNumber++,
               content: change.content,
               type: 'modified',
-              highlight: true
+              highlight: true,
             });
             rightLines.push({
               lineNumber: rightLineNumber++,
               content: change.content,
               type: 'modified',
-              highlight: true
+              highlight: true,
             });
             break;
         }
@@ -134,14 +135,14 @@ export class DiffFormatter {
       left: {
         lines: leftLines,
         title: 'Original',
-        language: diff.language
+        language: diff.language,
       },
       right: {
         lines: rightLines,
         title: 'Modified',
-        language: diff.language
+        language: diff.language,
       },
-      synchronizedScrolling: true
+      synchronizedScrolling: true,
     };
   }
 
@@ -159,7 +160,7 @@ export class DiffFormatter {
             lines.push({
               lineNumber: currentLine++,
               content: change.content,
-              type: 'context'
+              type: 'context',
             });
             break;
 
@@ -167,7 +168,7 @@ export class DiffFormatter {
             lines.push({
               lineNumber: currentLine,
               content: change.content,
-              type: 'deletion'
+              type: 'deletion',
             });
             break;
 
@@ -175,7 +176,7 @@ export class DiffFormatter {
             lines.push({
               lineNumber: currentLine++,
               content: change.content,
-              type: 'addition'
+              type: 'addition',
             });
             break;
 
@@ -184,7 +185,7 @@ export class DiffFormatter {
               lineNumber: currentLine++,
               content: change.content,
               type: 'modification',
-              oldContent: change.content // This would need the actual old content
+              oldContent: change.content, // This would need the actual old content
             });
             break;
         }
@@ -194,7 +195,7 @@ export class DiffFormatter {
     return {
       lines,
       title: diff.path,
-      language: diff.language
+      language: diff.language,
     };
   }
 
@@ -231,14 +232,14 @@ export class DiffFormatter {
     // File details
     output += `📁 File Changes:\n`;
     output += '───────────────────────────────────────────────────\n';
-    
+
     for (const fileDiff of preview.fileOperations) {
       const icon = this.getOperationIcon(fileDiff.operation.type);
       const stats = fileDiff.stats;
-      
+
       output += `${icon} ${fileDiff.path}\n`;
       output += `   ${stats.additions}+ ${stats.deletions}- (${stats.percentageChanged}% changed)\n`;
-      
+
       if (fileDiff.operation.metadata?.description) {
         output += `   📝 ${fileDiff.operation.metadata.description}\n`;
       }
@@ -303,18 +304,18 @@ export class DiffFormatter {
     for (const hunk of diff.hunks) {
       html += `<div class="hunk">`;
       html += `<div class="hunk-header">@@ -${hunk.startLine},${hunk.deletions} +${hunk.startLine},${hunk.additions} @@</div>`;
-      
+
       for (const change of hunk.changes) {
         const lineClass = this.getHTMLClass(change.type);
         const lineNumber = change.lineNumber || '';
         const prefix = this.getUnifiedPrefix(change.type);
-        
+
         html += `<div class="line ${lineClass}">`;
         html += `<span class="line-number">${lineNumber}</span>`;
         html += `${prefix}${this.escapeHtml(change.content)}`;
         html += `</div>`;
       }
-      
+
       html += `</div>`;
     }
 
@@ -332,22 +333,22 @@ export class DiffFormatter {
    */
   formatMarkdown(diff: FileDiff): string {
     let markdown = `## ${diff.path}\n\n`;
-    
+
     // Add statistics
     markdown += `**Changes:** ${diff.stats.additions} additions, ${diff.stats.deletions} deletions\n\n`;
 
     // Add diff content
     markdown += '```diff\n';
-    
+
     for (const hunk of diff.hunks) {
       markdown += `@@ -${hunk.startLine},${hunk.deletions} +${hunk.startLine},${hunk.additions} @@\n`;
-      
+
       for (const change of hunk.changes) {
         const prefix = this.getUnifiedPrefix(change.type);
         markdown += `${prefix}${change.content}\n`;
       }
     }
-    
+
     markdown += '```\n\n';
 
     return markdown;
@@ -358,10 +359,14 @@ export class DiffFormatter {
    */
   private getUnifiedPrefix(type: DiffChange['type']): string {
     switch (type) {
-      case 'add': return '+';
-      case 'delete': return '-';
-      case 'modify': return '!';
-      default: return ' ';
+      case 'add':
+        return '+';
+      case 'delete':
+        return '-';
+      case 'modify':
+        return '!';
+      default:
+        return ' ';
     }
   }
 
@@ -370,10 +375,14 @@ export class DiffFormatter {
    */
   private getHTMLClass(type: DiffChange['type']): string {
     switch (type) {
-      case 'add': return 'addition';
-      case 'delete': return 'deletion';
-      case 'modify': return 'modification';
-      default: return 'context';
+      case 'add':
+        return 'addition';
+      case 'delete':
+        return 'deletion';
+      case 'modify':
+        return 'modification';
+      default:
+        return 'context';
     }
   }
 
@@ -382,12 +391,18 @@ export class DiffFormatter {
    */
   private getOperationIcon(type: string): string {
     switch (type) {
-      case 'create': return '✨';
-      case 'update': return '📝';
-      case 'delete': return '🗑️';
-      case 'move': return '📦';
-      case 'append': return '➕';
-      default: return '📄';
+      case 'create':
+        return '✨';
+      case 'update':
+        return '📝';
+      case 'delete':
+        return '🗑️';
+      case 'move':
+        return '📦';
+      case 'append':
+        return '➕';
+      default:
+        return '📄';
     }
   }
 
@@ -396,10 +411,14 @@ export class DiffFormatter {
    */
   private formatRiskLevel(level: string): string {
     switch (level) {
-      case 'low': return '🟢 Low';
-      case 'medium': return '🟡 Medium';
-      case 'high': return '🔴 High';
-      default: return level;
+      case 'low':
+        return '🟢 Low';
+      case 'medium':
+        return '🟡 Medium';
+      case 'high':
+        return '🔴 High';
+      default:
+        return level;
     }
   }
 
@@ -431,10 +450,10 @@ export class DiffFormatter {
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
-      "'": '&#039;'
+      "'": '&#039;',
     };
-    
-    return text.replace(/[&<>"']/g, m => map[m]);
+
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 
   /**
@@ -442,7 +461,7 @@ export class DiffFormatter {
    */
   formatTerminal(diff: FileDiff): string {
     let output = '';
-    
+
     // Use ANSI color codes
     const colors = {
       red: '\x1b[31m',
@@ -451,7 +470,7 @@ export class DiffFormatter {
       blue: '\x1b[34m',
       cyan: '\x1b[36m',
       gray: '\x1b[90m',
-      reset: '\x1b[0m'
+      reset: '\x1b[0m',
     };
 
     // File header
@@ -461,7 +480,7 @@ export class DiffFormatter {
     for (const hunk of diff.hunks) {
       // Hunk header
       output += `${colors.blue}@@ -${hunk.startLine},${hunk.deletions} +${hunk.startLine},${hunk.additions} @@${colors.reset}\n`;
-      
+
       for (const change of hunk.changes) {
         switch (change.type) {
           case 'add':

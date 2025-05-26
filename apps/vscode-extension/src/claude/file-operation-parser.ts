@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Logger } from './logger';
-import { CodeBlock } from './streaming-parser';
-import { FileOperation, OperationType, OperationMetadata } from './code-extractor';
+import type { CodeBlock } from './streaming-parser';
+import {
+  type FileOperation,
+  OperationType,
+  type OperationMetadata,
+} from './code-extractor';
 
 /**
  * Represents a file creation operation
@@ -55,9 +59,12 @@ export class FileOperationParser {
   private workspaceRoot: string;
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude File Operation Parser');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude File Operation Parser',
+    );
     this.logger = new Logger(this.outputChannel);
-    this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    this.workspaceRoot =
+      vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
   }
 
   /**
@@ -74,7 +81,7 @@ export class FileOperationParser {
       content: this.extractCompleteContent(block),
       directoryStructure,
       metadata: this.buildMetadata(block),
-      encoding: 'utf8'
+      encoding: 'utf8',
     };
 
     // Check for file attributes in comments
@@ -100,7 +107,7 @@ export class FileOperationParser {
       targetPath: basePath,
       content: block.code,
       updateType,
-      metadata: this.buildMetadata(block)
+      metadata: this.buildMetadata(block),
     };
 
     // Parse specific update instructions
@@ -135,7 +142,7 @@ export class FileOperationParser {
       targetPath: basePath,
       metadata: this.buildMetadata(block),
       recursive: false,
-      force: false
+      force: false,
     };
 
     // Check for recursive deletion
@@ -191,7 +198,7 @@ export class FileOperationParser {
    */
   private extractDirectoryRequirements(block: CodeBlock): string[] {
     const directories: string[] = [];
-    
+
     if (block.filePath) {
       const dir = path.dirname(block.filePath);
       if (dir && dir !== '.') {
@@ -200,7 +207,9 @@ export class FileOperationParser {
     }
 
     // Look for directory creation comments
-    const dirMatches = block.code.matchAll(/\/\/\s*(?:create|mkdir)\s+directory:\s*(.+)$/gmi);
+    const dirMatches = block.code.matchAll(
+      /\/\/\s*(?:create|mkdir)\s+directory:\s*(.+)$/gim,
+    );
     for (const match of dirMatches) {
       directories.push(match[1].trim());
     }
@@ -211,7 +220,9 @@ export class FileOperationParser {
   /**
    * Determine update type from block
    */
-  private determineUpdateType(block: CodeBlock): 'replace' | 'insert' | 'patch' {
+  private determineUpdateType(
+    block: CodeBlock,
+  ): 'replace' | 'insert' | 'patch' {
     const code = block.code.toLowerCase();
     const description = (block.metadata?.description || '').toLowerCase();
 
@@ -221,7 +232,11 @@ export class FileOperationParser {
     }
 
     // Check for insert instructions
-    if (code.includes('// insert') || description.includes('insert') || description.includes('add')) {
+    if (
+      code.includes('// insert') ||
+      description.includes('insert') ||
+      description.includes('add')
+    ) {
       return 'insert';
     }
 
@@ -236,7 +251,10 @@ export class FileOperationParser {
   /**
    * Parse replace instructions
    */
-  private parseReplaceInstructions(block: CodeBlock): { search: string; replace: string } {
+  private parseReplaceInstructions(block: CodeBlock): {
+    search: string;
+    replace: string;
+  } {
     // Look for REPLACE: comments
     const replaceMatch = block.code.match(/\/\/\s*REPLACE:\s*(.+?)(?:\n|$)/i);
     const withMatch = block.code.match(/\/\/\s*WITH:\s*(.+?)(?:\n|$)/i);
@@ -244,45 +262,54 @@ export class FileOperationParser {
     if (replaceMatch && withMatch) {
       return {
         search: replaceMatch[1].trim(),
-        replace: withMatch[1].trim()
+        replace: withMatch[1].trim(),
       };
     }
 
     // Look for inline replace patterns
-    const inlineMatch = block.code.match(/\/\/\s*Replace\s+['"`](.+?)['"`]\s+with\s+['"`](.+?)['"`]/i);
+    const inlineMatch = block.code.match(
+      /\/\/\s*Replace\s+['"`](.+?)['"`]\s+with\s+['"`](.+?)['"`]/i,
+    );
     if (inlineMatch) {
       return {
         search: inlineMatch[1],
-        replace: inlineMatch[2]
+        replace: inlineMatch[2],
       };
     }
 
     // If no explicit instructions, use the whole content
     return {
       search: '',
-      replace: block.code
+      replace: block.code,
     };
   }
 
   /**
    * Parse insert instructions
    */
-  private parseInsertInstructions(block: CodeBlock): { position: 'before' | 'after' | 'start' | 'end'; anchor?: string } {
+  private parseInsertInstructions(block: CodeBlock): {
+    position: 'before' | 'after' | 'start' | 'end';
+    anchor?: string;
+  } {
     // Look for INSERT AFTER: comments
-    const afterMatch = block.code.match(/\/\/\s*INSERT\s+AFTER:\s*(.+?)(?:\n|$)/i);
+    const afterMatch = block.code.match(
+      /\/\/\s*INSERT\s+AFTER:\s*(.+?)(?:\n|$)/i,
+    );
     if (afterMatch) {
       return {
         position: 'after',
-        anchor: afterMatch[1].trim()
+        anchor: afterMatch[1].trim(),
       };
     }
 
     // Look for INSERT BEFORE: comments
-    const beforeMatch = block.code.match(/\/\/\s*INSERT\s+BEFORE:\s*(.+?)(?:\n|$)/i);
+    const beforeMatch = block.code.match(
+      /\/\/\s*INSERT\s+BEFORE:\s*(.+?)(?:\n|$)/i,
+    );
     if (beforeMatch) {
       return {
         position: 'before',
-        anchor: beforeMatch[1].trim()
+        anchor: beforeMatch[1].trim(),
       };
     }
 
@@ -291,7 +318,10 @@ export class FileOperationParser {
       return { position: 'start' };
     }
 
-    if (block.code.match(/\/\/\s*INSERT\s+AT\s+END/i) || block.code.match(/\/\/\s*APPEND/i)) {
+    if (
+      block.code.match(/\/\/\s*INSERT\s+AT\s+END/i) ||
+      block.code.match(/\/\/\s*APPEND/i)
+    ) {
       return { position: 'end' };
     }
 
@@ -302,14 +332,17 @@ export class FileOperationParser {
   /**
    * Parse instruction comment
    */
-  private parseInstructionComment(line: string, lineNumber: number): InlineInstruction | null {
+  private parseInstructionComment(
+    line: string,
+    lineNumber: number,
+  ): InlineInstruction | null {
     // TODO: instruction
     const todoMatch = line.match(/\/\/\s*TODO:\s*(.+)$/i);
     if (todoMatch) {
       return {
         type: 'todo',
         line: lineNumber,
-        content: todoMatch[1].trim()
+        content: todoMatch[1].trim(),
       };
     }
 
@@ -319,7 +352,7 @@ export class FileOperationParser {
       return {
         type: 'replace',
         line: lineNumber,
-        content: replaceMatch[1].trim()
+        content: replaceMatch[1].trim(),
       };
     }
 
@@ -330,7 +363,7 @@ export class FileOperationParser {
         type: 'insert',
         line: lineNumber,
         content: insertMatch[2].trim(),
-        position: insertMatch[1].toLowerCase() as 'before' | 'after'
+        position: insertMatch[1].toLowerCase() as 'before' | 'after',
       };
     }
 
@@ -340,7 +373,7 @@ export class FileOperationParser {
       return {
         type: 'delete',
         line: lineNumber,
-        content: deleteMatch[1].trim()
+        content: deleteMatch[1].trim(),
       };
     }
 
@@ -354,7 +387,7 @@ export class FileOperationParser {
     const metadata: OperationMetadata = {
       description: block.metadata?.description,
       language: block.language,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // Extract dependencies from imports
@@ -372,7 +405,9 @@ export class FileOperationParser {
     const deps: Set<string> = new Set();
 
     // ES6 imports
-    const importMatches = code.matchAll(/import\s+.*?\s+from\s+['"]([^'"]+)['"]/g);
+    const importMatches = code.matchAll(
+      /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g,
+    );
     for (const match of importMatches) {
       if (!match[1].startsWith('.')) {
         deps.add(match[1]);
@@ -380,7 +415,9 @@ export class FileOperationParser {
     }
 
     // CommonJS requires
-    const requireMatches = code.matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g);
+    const requireMatches = code.matchAll(
+      /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    );
     for (const match of requireMatches) {
       if (!match[1].startsWith('.')) {
         deps.add(match[1]);

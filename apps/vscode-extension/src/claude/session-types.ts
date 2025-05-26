@@ -1,4 +1,4 @@
-import { FileOperation } from './code-extractor';
+import type { FileOperation } from './code-extractor';
 
 /**
  * Represents a single message in a conversation
@@ -124,7 +124,7 @@ export enum SessionEventType {
   ARCHIVED = 'session.archived',
   DELETED = 'session.deleted',
   BRANCHED = 'session.branched',
-  RESTORED = 'session.restored'
+  RESTORED = 'session.restored',
 }
 
 /**

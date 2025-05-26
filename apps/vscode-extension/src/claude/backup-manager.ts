@@ -36,7 +36,9 @@ export class BackupManager {
   private readonly METADATA_FILE = 'backup-metadata.json';
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Backup Manager');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Backup Manager',
+    );
     this.logger = new Logger(this.outputChannel);
     this.metadata = { backups: [], version: '1.0.0' };
     this.initialize();
@@ -52,11 +54,16 @@ export class BackupManager {
       return;
     }
 
-    this.backupRoot = path.join(workspaceFolders[0].uri.fsPath, this.BACKUP_DIR);
-    
+    this.backupRoot = path.join(
+      workspaceFolders[0].uri.fsPath,
+      this.BACKUP_DIR,
+    );
+
     // Ensure backup directory exists
     try {
-      await vscode.workspace.fs.createDirectory(vscode.Uri.file(this.backupRoot));
+      await vscode.workspace.fs.createDirectory(
+        vscode.Uri.file(this.backupRoot),
+      );
     } catch (error) {
       // Directory might already exist
     }
@@ -74,11 +81,11 @@ export class BackupManager {
     }
 
     const uri = vscode.Uri.file(filePath);
-    
+
     // Check if file exists
     let fileContent: Uint8Array;
     let fileStats: vscode.FileStat;
-    
+
     try {
       fileContent = await vscode.workspace.fs.readFile(uri);
       fileStats = await vscode.workspace.fs.stat(uri);
@@ -96,7 +103,10 @@ export class BackupManager {
     const checksum = this.calculateChecksum(fileContent);
 
     // Write backup file
-    await vscode.workspace.fs.writeFile(vscode.Uri.file(backupPath), fileContent);
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.file(backupPath),
+      fileContent,
+    );
 
     // Create backup info
     const backupInfo: BackupInfo = {
@@ -106,7 +116,7 @@ export class BackupManager {
       timestamp,
       size: fileStats.size,
       operation: 'backup',
-      checksum
+      checksum,
     };
 
     // Update metadata
@@ -121,8 +131,8 @@ export class BackupManager {
    * Restore a file from backup
    */
   async restoreBackup(backupId: string): Promise<void> {
-    const backupInfo = this.metadata.backups.find(b => b.id === backupId);
-    
+    const backupInfo = this.metadata.backups.find((b) => b.id === backupId);
+
     if (!backupInfo) {
       throw new Error(`Backup not found: ${backupId}`);
     }
@@ -130,7 +140,7 @@ export class BackupManager {
     // Read backup file
     const backupUri = vscode.Uri.file(backupInfo.backupPath);
     let backupContent: Uint8Array;
-    
+
     try {
       backupContent = await vscode.workspace.fs.readFile(backupUri);
     } catch (error) {
@@ -149,7 +159,9 @@ export class BackupManager {
     const originalUri = vscode.Uri.file(backupInfo.originalPath);
     await vscode.workspace.fs.writeFile(originalUri, backupContent);
 
-    this.logger.info(`Restored backup ${backupId} to ${backupInfo.originalPath}`);
+    this.logger.info(
+      `Restored backup ${backupId} to ${backupInfo.originalPath}`,
+    );
   }
 
   /**
@@ -177,7 +189,9 @@ export class BackupManager {
         await vscode.workspace.fs.delete(vscode.Uri.file(backup.backupPath));
         this.logger.debug(`Deleted old backup: ${backup.id}`);
       } catch (error) {
-        this.logger.warning(`Failed to delete backup file: ${backup.backupPath}`);
+        this.logger.warning(
+          `Failed to delete backup file: ${backup.backupPath}`,
+        );
       }
     }
 
@@ -194,7 +208,7 @@ export class BackupManager {
    */
   async listBackups(filePath?: string): Promise<BackupInfo[]> {
     if (filePath) {
-      return this.metadata.backups.filter(b => b.originalPath === filePath);
+      return this.metadata.backups.filter((b) => b.originalPath === filePath);
     }
     return [...this.metadata.backups];
   }
@@ -203,15 +217,15 @@ export class BackupManager {
    * Get backup information
    */
   getBackupInfo(backupId: string): BackupInfo | undefined {
-    return this.metadata.backups.find(b => b.id === backupId);
+    return this.metadata.backups.find((b) => b.id === backupId);
   }
 
   /**
    * Verify backup integrity
    */
   async verifyBackup(backupId: string): Promise<boolean> {
-    const backupInfo = this.metadata.backups.find(b => b.id === backupId);
-    
+    const backupInfo = this.metadata.backups.find((b) => b.id === backupId);
+
     if (!backupInfo) {
       return false;
     }
@@ -219,12 +233,12 @@ export class BackupManager {
     try {
       const backupUri = vscode.Uri.file(backupInfo.backupPath);
       const content = await vscode.workspace.fs.readFile(backupUri);
-      
+
       if (backupInfo.checksum) {
         const currentChecksum = this.calculateChecksum(content);
         return currentChecksum === backupInfo.checksum;
       }
-      
+
       return true;
     } catch (error) {
       return false;
@@ -236,7 +250,7 @@ export class BackupManager {
    */
   async exportBackups(filePath: string, exportPath: string): Promise<void> {
     const backups = await this.listBackups(filePath);
-    
+
     if (backups.length === 0) {
       throw new Error(`No backups found for ${filePath}`);
     }
@@ -244,23 +258,26 @@ export class BackupManager {
     const exportData = {
       originalFile: filePath,
       exportDate: new Date(),
-      backups: backups.map(b => ({
+      backups: backups.map((b) => ({
         ...b,
-        content: undefined // Will be added below
-      }))
+        content: undefined, // Will be added below
+      })),
     };
 
     // Include backup contents
     for (let i = 0; i < backups.length; i++) {
-      const content = await vscode.workspace.fs.readFile(vscode.Uri.file(backups[i].backupPath));
-      (exportData.backups[i] as any).content = Buffer.from(content).toString('base64');
+      const content = await vscode.workspace.fs.readFile(
+        vscode.Uri.file(backups[i].backupPath),
+      );
+      (exportData.backups[i] as any).content =
+        Buffer.from(content).toString('base64');
     }
 
     // Write export file
     const exportContent = JSON.stringify(exportData, null, 2);
     await vscode.workspace.fs.writeFile(
       vscode.Uri.file(exportPath),
-      new TextEncoder().encode(exportContent)
+      new TextEncoder().encode(exportContent),
     );
 
     this.logger.info(`Exported ${backups.length} backups to ${exportPath}`);
@@ -270,7 +287,9 @@ export class BackupManager {
    * Import backups from export file
    */
   async importBackups(importPath: string): Promise<number> {
-    const content = await vscode.workspace.fs.readFile(vscode.Uri.file(importPath));
+    const content = await vscode.workspace.fs.readFile(
+      vscode.Uri.file(importPath),
+    );
     const importData = JSON.parse(new TextDecoder().decode(content));
 
     let imported = 0;
@@ -295,7 +314,7 @@ export class BackupManager {
         timestamp: new Date(backupData.timestamp),
         size: backupData.size,
         operation: `imported from ${path.basename(importPath)}`,
-        checksum: backupData.checksum
+        checksum: backupData.checksum,
       };
 
       this.metadata.backups.push(backupInfo);
@@ -304,7 +323,7 @@ export class BackupManager {
 
     await this.saveMetadata();
     this.logger.info(`Imported ${imported} backups from ${importPath}`);
-    
+
     return imported;
   }
 
@@ -329,19 +348,23 @@ export class BackupManager {
     if (!this.backupRoot) return;
 
     const metadataPath = path.join(this.backupRoot, this.METADATA_FILE);
-    
+
     try {
-      const content = await vscode.workspace.fs.readFile(vscode.Uri.file(metadataPath));
+      const content = await vscode.workspace.fs.readFile(
+        vscode.Uri.file(metadataPath),
+      );
       const data = JSON.parse(new TextDecoder().decode(content));
-      
+
       // Convert date strings back to Date objects
       data.backups = data.backups.map((b: any) => ({
         ...b,
-        timestamp: new Date(b.timestamp)
+        timestamp: new Date(b.timestamp),
       }));
-      
+
       this.metadata = data;
-      this.logger.debug(`Loaded ${this.metadata.backups.length} backups from metadata`);
+      this.logger.debug(
+        `Loaded ${this.metadata.backups.length} backups from metadata`,
+      );
     } catch (error) {
       // No metadata file exists yet
       this.logger.debug('No existing backup metadata found');
@@ -356,10 +379,10 @@ export class BackupManager {
 
     const metadataPath = path.join(this.backupRoot, this.METADATA_FILE);
     const content = JSON.stringify(this.metadata, null, 2);
-    
+
     await vscode.workspace.fs.writeFile(
       vscode.Uri.file(metadataPath),
-      new TextEncoder().encode(content)
+      new TextEncoder().encode(content),
     );
   }
 
@@ -376,16 +399,19 @@ export class BackupManager {
       totalBackups: this.metadata.backups.length,
       totalSize: 0,
       oldestBackup: undefined as Date | undefined,
-      newestBackup: undefined as Date | undefined
+      newestBackup: undefined as Date | undefined,
     };
 
     if (this.metadata.backups.length > 0) {
-      stats.totalSize = this.metadata.backups.reduce((sum, b) => sum + b.size, 0);
-      
-      const sorted = [...this.metadata.backups].sort((a, b) => 
-        a.timestamp.getTime() - b.timestamp.getTime()
+      stats.totalSize = this.metadata.backups.reduce(
+        (sum, b) => sum + b.size,
+        0,
       );
-      
+
+      const sorted = [...this.metadata.backups].sort(
+        (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+      );
+
       stats.oldestBackup = sorted[0].timestamp;
       stats.newestBackup = sorted[sorted.length - 1].timestamp;
     }

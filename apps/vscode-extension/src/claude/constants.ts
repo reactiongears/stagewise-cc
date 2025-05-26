@@ -46,7 +46,7 @@ export const ERROR_PATTERNS = [
   /Network error/i,
   /Process terminated/i,
   /Claude CLI not found/i,
-  /Permission denied/i
+  /Permission denied/i,
 ];
 
 /**

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Logger } from './logger';
-import { FileDiff, DiffPreview, DiffChange } from './diff-types';
+import type { FileDiff, DiffPreview } from './diff-types';
 import { DiffFormatter } from './diff-formatter';
 
 /**
@@ -16,21 +16,22 @@ export class DiffViewer {
   private disposables: vscode.Disposable[] = [];
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Diff Viewer');
+    this.outputChannel =
+      vscode.window.createOutputChannel('Claude Diff Viewer');
     this.logger = new Logger(this.outputChannel);
     this.formatter = new DiffFormatter();
-    
+
     // Create decoration type for highlighting changes
     this.decorationType = vscode.window.createTextEditorDecorationType({
       isWholeLine: true,
-      overviewRulerLane: vscode.OverviewRulerLane.Full
+      overviewRulerLane: vscode.OverviewRulerLane.Full,
     });
 
     // Set temp directory for diff files
     this.tempDirectory = path.join(
       vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '',
       '.stagewise-cc',
-      'diff-temp'
+      'diff-temp',
     );
   }
 
@@ -41,19 +42,19 @@ export class DiffViewer {
     try {
       const originalUri = await this.createTempFile(
         fileDiff.originalContent || '',
-        `original_${path.basename(fileDiff.path)}`
+        `original_${path.basename(fileDiff.path)}`,
       );
-      
+
       const modifiedUri = await this.createTempFile(
         fileDiff.modifiedContent || '',
-        `modified_${path.basename(fileDiff.path)}`
+        `modified_${path.basename(fileDiff.path)}`,
       );
 
       // Open diff editor
       await this.openDiffEditor(
         originalUri,
         modifiedUri,
-        `${path.basename(fileDiff.path)} - Claude Changes`
+        `${path.basename(fileDiff.path)} - Claude Changes`,
       );
 
       // Add decorations
@@ -75,8 +76,8 @@ export class DiffViewer {
       vscode.ViewColumn.One,
       {
         enableScripts: true,
-        retainContextWhenHidden: true
-      }
+        retainContextWhenHidden: true,
+      },
     );
 
     // Generate HTML content
@@ -84,26 +85,28 @@ export class DiffViewer {
 
     // Handle messages from webview
     panel.webview.onDidReceiveMessage(
-      async message => {
+      async (message) => {
         switch (message.command) {
           case 'showFile':
-            const fileDiff = preview.fileOperations.find(fd => fd.path === message.path);
+            const fileDiff = preview.fileOperations.find(
+              (fd) => fd.path === message.path,
+            );
             if (fileDiff) {
               await this.showDiff(fileDiff);
             }
             break;
-          
+
           case 'applyChanges':
             await this.applySelectedChanges(preview, message.selectedFiles);
             break;
-          
+
           case 'exportDiff':
             await this.exportDiff(preview);
             break;
         }
       },
       undefined,
-      this.disposables
+      this.disposables,
     );
 
     this.disposables.push(panel);
@@ -112,7 +115,10 @@ export class DiffViewer {
   /**
    * Create a temporary document for diff display
    */
-  async createDiffDocument(content: string, uri: vscode.Uri): Promise<vscode.TextDocument> {
+  async createDiffDocument(
+    content: string,
+    uri: vscode.Uri,
+  ): Promise<vscode.TextDocument> {
     // This is handled by the content provider in the actual implementation
     // For now, we'll use the temporary file approach
     return await vscode.workspace.openTextDocument(uri);
@@ -121,26 +127,30 @@ export class DiffViewer {
   /**
    * Open VSCode diff editor
    */
-  async openDiffEditor(left: vscode.Uri, right: vscode.Uri, title: string): Promise<void> {
-    await vscode.commands.executeCommand(
-      'vscode.diff',
-      left,
-      right,
-      title,
-      { preview: true, preserveFocus: false }
-    );
+  async openDiffEditor(
+    left: vscode.Uri,
+    right: vscode.Uri,
+    title: string,
+  ): Promise<void> {
+    await vscode.commands.executeCommand('vscode.diff', left, right, title, {
+      preview: true,
+      preserveFocus: false,
+    });
   }
 
   /**
    * Generate HTML for multi-file diff view
    */
-  private generateMultiFileDiffHTML(preview: DiffPreview, webview: vscode.Webview): string {
+  private generateMultiFileDiffHTML(
+    preview: DiffPreview,
+    webview: vscode.Webview,
+  ): string {
     const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.getExtensionUri(), 'media', 'diff-viewer.css')
+      vscode.Uri.joinPath(this.getExtensionUri(), 'media', 'diff-viewer.css'),
     );
-    
+
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.getExtensionUri(), 'media', 'diff-viewer.js')
+      vscode.Uri.joinPath(this.getExtensionUri(), 'media', 'diff-viewer.js'),
     );
 
     const summary = this.formatter.formatSummary(preview);
@@ -150,7 +160,7 @@ export class DiffViewer {
     for (const fileDiff of preview.fileOperations) {
       const icon = this.getFileIcon(fileDiff.path);
       const changeType = this.getChangeTypeLabel(fileDiff.operation.type);
-      
+
       fileListHtml += `
         <div class="file-item" data-path="${fileDiff.path}">
           <input type="checkbox" class="file-checkbox" checked>
@@ -403,7 +413,7 @@ export class DiffViewer {
     // Convert the text summary to HTML with proper styling
     const lines = summary.split('\n');
     let html = '';
-    
+
     for (const line of lines) {
       if (line.includes('Overview:')) {
         html += '<h3>Overview</h3>';
@@ -426,7 +436,7 @@ export class DiffViewer {
         }
       }
     }
-    
+
     return html;
   }
 
@@ -435,45 +445,45 @@ export class DiffViewer {
    */
   private async addDiffDecorations(fileDiff: FileDiff): Promise<void> {
     const editors = vscode.window.visibleTextEditors;
-    
+
     for (const editor of editors) {
       if (editor.document.uri.path.includes(path.basename(fileDiff.path))) {
         const addDecorations: vscode.DecorationOptions[] = [];
         const deleteDecorations: vscode.DecorationOptions[] = [];
-        
+
         for (const hunk of fileDiff.hunks) {
           for (const change of hunk.changes) {
             const line = change.lineNumber - 1; // VSCode uses 0-based line numbers
-            
+
             if (change.type === 'add') {
               addDecorations.push({
                 range: new vscode.Range(line, 0, line, Number.MAX_VALUE),
-                hoverMessage: 'Added line'
+                hoverMessage: 'Added line',
               });
             } else if (change.type === 'delete') {
               deleteDecorations.push({
                 range: new vscode.Range(line, 0, line, Number.MAX_VALUE),
-                hoverMessage: 'Deleted line'
+                hoverMessage: 'Deleted line',
               });
             }
           }
         }
-        
+
         // Apply decorations
         editor.setDecorations(
           vscode.window.createTextEditorDecorationType({
             backgroundColor: 'rgba(0, 255, 0, 0.2)',
-            isWholeLine: true
+            isWholeLine: true,
           }),
-          addDecorations
+          addDecorations,
         );
-        
+
         editor.setDecorations(
           vscode.window.createTextEditorDecorationType({
             backgroundColor: 'rgba(255, 0, 0, 0.2)',
-            isWholeLine: true
+            isWholeLine: true,
           }),
-          deleteDecorations
+          deleteDecorations,
         );
       }
     }
@@ -482,21 +492,26 @@ export class DiffViewer {
   /**
    * Create temporary file for diff
    */
-  private async createTempFile(content: string, fileName: string): Promise<vscode.Uri> {
+  private async createTempFile(
+    content: string,
+    fileName: string,
+  ): Promise<vscode.Uri> {
     const tempUri = vscode.Uri.joinPath(
       vscode.Uri.file(this.tempDirectory),
-      fileName
+      fileName,
     );
-    
+
     // Ensure directory exists
-    await vscode.workspace.fs.createDirectory(vscode.Uri.file(this.tempDirectory));
-    
+    await vscode.workspace.fs.createDirectory(
+      vscode.Uri.file(this.tempDirectory),
+    );
+
     // Write content
     await vscode.workspace.fs.writeFile(
       tempUri,
-      new TextEncoder().encode(content)
+      new TextEncoder().encode(content),
     );
-    
+
     return tempUri;
   }
 
@@ -526,9 +541,9 @@ export class DiffViewer {
       '.py': '🐍',
       '.java': '☕',
       '.go': '🐹',
-      '.rs': '🦀'
+      '.rs': '🦀',
     };
-    
+
     return iconMap[ext] || '📄';
   }
 
@@ -537,23 +552,26 @@ export class DiffViewer {
    */
   private getChangeTypeLabel(type: string): string {
     const labels: Record<string, string> = {
-      'create': 'CREATE',
-      'update': 'UPDATE',
-      'delete': 'DELETE',
-      'move': 'MOVE',
-      'append': 'APPEND'
+      create: 'CREATE',
+      update: 'UPDATE',
+      delete: 'DELETE',
+      move: 'MOVE',
+      append: 'APPEND',
     };
-    
+
     return labels[type] || type.toUpperCase();
   }
 
   /**
    * Apply selected changes
    */
-  private async applySelectedChanges(preview: DiffPreview, selectedFiles: string[]): Promise<void> {
+  private async applySelectedChanges(
+    preview: DiffPreview,
+    selectedFiles: string[],
+  ): Promise<void> {
     const selectedOperations = preview.fileOperations
-      .filter(fd => selectedFiles.includes(fd.path))
-      .map(fd => fd.operation);
+      .filter((fd) => selectedFiles.includes(fd.path))
+      .map((fd) => fd.operation);
 
     if (selectedOperations.length === 0) {
       vscode.window.showInformationMessage('No files selected');
@@ -562,7 +580,7 @@ export class DiffViewer {
 
     // This would integrate with the file modification service
     vscode.window.showInformationMessage(
-      `Applying ${selectedOperations.length} file operations...`
+      `Applying ${selectedOperations.length} file operations...`,
     );
   }
 
@@ -574,8 +592,8 @@ export class DiffViewer {
       defaultUri: vscode.Uri.file('claude-changes.patch'),
       filters: {
         'Patch files': ['patch'],
-        'All files': ['*']
-      }
+        'All files': ['*'],
+      },
     });
 
     if (!saveUri) return;
@@ -589,7 +607,7 @@ export class DiffViewer {
 
     await vscode.workspace.fs.writeFile(
       saveUri,
-      new TextEncoder().encode(patchContent)
+      new TextEncoder().encode(patchContent),
     );
 
     vscode.window.showInformationMessage(`Diff exported to ${saveUri.fsPath}`);
@@ -603,20 +621,26 @@ export class DiffViewer {
     context.subscriptions.push(
       vscode.commands.registerCommand('stagewise-cc.diff.nextChange', () => {
         this.navigateToChange('next');
-      })
+      }),
     );
 
     context.subscriptions.push(
-      vscode.commands.registerCommand('stagewise-cc.diff.previousChange', () => {
-        this.navigateToChange('previous');
-      })
+      vscode.commands.registerCommand(
+        'stagewise-cc.diff.previousChange',
+        () => {
+          this.navigateToChange('previous');
+        },
+      ),
     );
 
     // Toggle change selection
     context.subscriptions.push(
-      vscode.commands.registerCommand('stagewise-cc.diff.toggleSelection', () => {
-        this.toggleChangeSelection();
-      })
+      vscode.commands.registerCommand(
+        'stagewise-cc.diff.toggleSelection',
+        () => {
+          this.toggleChangeSelection();
+        },
+      ),
     );
   }
 
@@ -641,13 +665,15 @@ export class DiffViewer {
    */
   dispose(): void {
     // Clean up temporary files
-    vscode.workspace.fs.delete(vscode.Uri.file(this.tempDirectory), { recursive: true });
-    
+    vscode.workspace.fs.delete(vscode.Uri.file(this.tempDirectory), {
+      recursive: true,
+    });
+
     // Dispose of decorations
     this.decorationType.dispose();
-    
+
     // Dispose of other resources
-    this.disposables.forEach(d => d.dispose());
+    this.disposables.forEach((d) => d.dispose());
     this.outputChannel.dispose();
     this.formatter.dispose();
   }

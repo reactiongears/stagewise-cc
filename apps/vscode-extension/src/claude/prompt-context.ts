@@ -1,4 +1,4 @@
-import type { WorkspaceInfo, FileInfo } from './workspace-types';
+import type { WorkspaceInfo } from './workspace-types';
 import type { DOMElementData } from './dom-types';
 import type { PluginContextData } from './transformation-types';
 
@@ -16,57 +16,57 @@ export interface ClaudePromptContext {
    * The main user prompt/message
    */
   userMessage: string;
-  
+
   /**
    * Current browser URL when the prompt was sent (if applicable)
    */
   currentUrl?: string;
-  
+
   /**
    * Timestamp when the prompt was created
    */
   timestamp: Date;
-  
+
   /**
    * Workspace metadata including file information and project context
    */
   workspaceInfo?: WorkspaceInfo;
-  
+
   /**
    * Workspace metadata (alternative property name for compatibility)
    */
   workspaceMetadata?: WorkspaceInfo;
-  
+
   /**
    * Selected DOM elements from the browser
    */
   selectedElements?: DOMElementData[];
-  
+
   /**
    * DOM elements (alternative property name for compatibility)
    */
   domElements?: DOMElementData[];
-  
+
   /**
    * Context data provided by plugins
    */
   pluginContext?: PluginContextData[];
-  
+
   /**
    * Plugin contexts (alternative property name for compatibility)
    */
   pluginContexts?: PluginContextData[];
-  
+
   /**
    * Metadata for transformation and optimization
    */
   metadata?: ContextMetadata;
-  
+
   /**
    * Context strategy (can be at top level or in metadata)
    */
   strategy?: ContextStrategy | string;
-  
+
   /**
    * Maximum tokens for the prompt
    */
@@ -81,22 +81,22 @@ export interface ContextMetadata {
    * Schema version for migration compatibility
    */
   version: string;
-  
+
   /**
    * Conversation session ID for context continuity
    */
   sessionId?: string;
-  
+
   /**
    * Strategy for building context
    */
   contextStrategy: ContextStrategy;
-  
+
   /**
    * Maximum tokens allocated for context
    */
   tokenBudget: number;
-  
+
   /**
    * Priority order for including context elements
    */
@@ -111,16 +111,16 @@ export enum ContextStrategy {
    * Include only essential context
    */
   MINIMAL = 'minimal',
-  
+
   /**
    * Include standard context for most use cases
    */
   STANDARD = 'standard',
-  
+
   /**
    * Include all available context
    */
-  COMPREHENSIVE = 'comprehensive'
+  COMPREHENSIVE = 'comprehensive',
 }
 
 /**
@@ -131,26 +131,26 @@ export enum ContextPriority {
    * Currently active file content
    */
   CURRENT_FILE = 'current_file',
-  
+
   /**
    * Selected DOM elements
    */
   SELECTED_ELEMENTS = 'selected_elements',
-  
+
   /**
    * High-level workspace overview
    */
   WORKSPACE_OVERVIEW = 'workspace_overview',
-  
+
   /**
    * Related files (imports, dependencies)
    */
   RELATED_FILES = 'related_files',
-  
+
   /**
    * Plugin-provided context data
    */
-  PLUGIN_DATA = 'plugin_data'
+  PLUGIN_DATA = 'plugin_data',
 }
 
 /**
@@ -165,14 +165,16 @@ export const DEFAULT_CONTEXT_METADATA: ContextMetadata = {
     ContextPriority.SELECTED_ELEMENTS,
     ContextPriority.WORKSPACE_OVERVIEW,
     ContextPriority.RELATED_FILES,
-    ContextPriority.PLUGIN_DATA
-  ]
+    ContextPriority.PLUGIN_DATA,
+  ],
 };
 
 /**
  * Validates if an object conforms to the ClaudePromptContext interface
  */
-export function validateClaudePromptContext(context: any): context is ClaudePromptContext {
+export function validateClaudePromptContext(
+  context: any,
+): context is ClaudePromptContext {
   return (
     context &&
     typeof context === 'object' &&
@@ -192,14 +194,18 @@ export function validateClaudePromptContext(context: any): context is ClaudeProm
 /**
  * Type guard for ContextStrategy
  */
-export function isValidContextStrategy(strategy: string): strategy is ContextStrategy {
+export function isValidContextStrategy(
+  strategy: string,
+): strategy is ContextStrategy {
   return Object.values(ContextStrategy).includes(strategy as ContextStrategy);
 }
 
 /**
  * Type guard for ContextPriority
  */
-export function isValidContextPriority(priority: string): priority is ContextPriority {
+export function isValidContextPriority(
+  priority: string,
+): priority is ContextPriority {
   return Object.values(ContextPriority).includes(priority as ContextPriority);
 }
 
@@ -266,10 +272,10 @@ export function createEmptyContext(): ClaudePromptContext {
       recentFiles: [],
       projectStructure: {
         frameworks: [],
-        dependencies: []
-      }
+        dependencies: [],
+      },
     },
-    metadata: { ...DEFAULT_CONTEXT_METADATA }
+    metadata: { ...DEFAULT_CONTEXT_METADATA },
   };
 }
 
@@ -278,29 +284,29 @@ export function createEmptyContext(): ClaudePromptContext {
  */
 export function mergeContexts(
   base: ClaudePromptContext,
-  additional: Partial<ClaudePromptContext>
+  additional: Partial<ClaudePromptContext>,
 ): ClaudePromptContext {
   const merged: ClaudePromptContext = {
     ...base,
-    ...additional
+    ...additional,
   };
-  
+
   // Handle workspaceInfo merge
   if (base.workspaceInfo && additional.workspaceInfo) {
     merged.workspaceInfo = {
       ...base.workspaceInfo,
-      ...additional.workspaceInfo
+      ...additional.workspaceInfo,
     };
   }
-  
+
   // Handle metadata merge
   if (base.metadata && additional.metadata) {
     merged.metadata = {
       ...base.metadata,
-      ...additional.metadata
+      ...additional.metadata,
     };
   }
-  
+
   return merged;
 }
 
@@ -310,28 +316,28 @@ export function mergeContexts(
  */
 export function estimateTokenUsage(context: ClaudePromptContext): number {
   let charCount = 0;
-  
+
   // Count user message
   charCount += context.userMessage.length;
-  
+
   // Count URL
   if (context.currentUrl) {
     charCount += context.currentUrl.length;
   }
-  
+
   // Count workspace info (simplified)
   charCount += JSON.stringify(context.workspaceInfo).length;
-  
+
   // Count DOM elements
   if (context.selectedElements) {
     charCount += JSON.stringify(context.selectedElements).length;
   }
-  
+
   // Count plugin context
   if (context.pluginContext) {
     charCount += JSON.stringify(context.pluginContext).length;
   }
-  
+
   // Rough estimate: 4 characters per token
   return Math.ceil(charCount / 4);
 }
@@ -348,15 +354,15 @@ export function serializeContext(context: ClaudePromptContext): string {
  */
 export function deserializeContext(serialized: string): ClaudePromptContext {
   const parsed = JSON.parse(serialized);
-  
+
   // Convert timestamp string back to Date
   if (parsed.timestamp) {
     parsed.timestamp = new Date(parsed.timestamp);
   }
-  
+
   if (!validateClaudePromptContext(parsed)) {
     throw new Error('Invalid ClaudePromptContext format');
   }
-  
+
   return parsed;
 }

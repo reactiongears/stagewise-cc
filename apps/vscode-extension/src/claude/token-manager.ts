@@ -1,30 +1,32 @@
 import * as vscode from 'vscode';
-import type { 
-  TokenBudget, 
-  TokenAllocation, 
+import type {
+  TokenBudget,
+  TokenAllocation,
   PromptSection,
-  ClaudePromptContext 
+  ClaudePromptContext,
 } from './prompt-context';
 import { Logger } from './logger';
 
 export class TokenManager {
   private logger: Logger;
   private outputChannel: vscode.OutputChannel;
-  
+
   // Token estimation constants (approximations for Claude)
   private readonly CHARS_PER_TOKEN = 4;
   private readonly CODE_TOKEN_MULTIPLIER = 1.2;
   private readonly MARKDOWN_OVERHEAD = 1.1;
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Token Manager');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Token Manager',
+    );
     this.logger = new Logger(this.outputChannel);
   }
 
   calculateTokenBudget(maxTokens: number): TokenBudget {
     // Use conservative strategy by default (80% of max)
     const totalBudget = Math.floor(maxTokens * 0.8);
-    
+
     // Reserve tokens for system prompt (approximately 500 tokens)
     const systemPromptTokens = 500;
     const availableForUser = totalBudget - systemPromptTokens;
@@ -58,7 +60,9 @@ export class TokenManager {
     }
 
     // Adjust for markdown formatting
-    const markdownElements = (text.match(/^#+\s|^\*\s|^\d+\.\s|\*\*|__|```/gm) || []).length;
+    const markdownElements = (
+      text.match(/^#+\s|^\*\s|^\d+\.\s|\*\*|__|```/gm) || []
+    ).length;
     if (markdownElements > 5) {
       tokens = Math.ceil(tokens * this.MARKDOWN_OVERHEAD);
     }
@@ -69,11 +73,11 @@ export class TokenManager {
   allocateTokens(context: ClaudePromptContext): TokenAllocation {
     const maxTokens = context.maxTokens || 100000;
     const budget = this.calculateTokenBudget(maxTokens);
-    
+
     const allocation: TokenAllocation = {
       total: budget.total,
       used: 0,
-      sections: []
+      sections: [],
     };
 
     // Track token usage by section type
@@ -88,38 +92,42 @@ export class TokenManager {
     sectionTypes.push({
       type: 'userMessage',
       used: userMessageTokens,
-      budget: budget.userMessage
+      budget: budget.userMessage,
     });
     allocation.used += userMessageTokens;
 
     // DOM elements
     if (context.domElements && context.domElements.length > 0) {
-      const domTokens = this.estimateTokens(JSON.stringify(context.domElements));
+      const domTokens = this.estimateTokens(
+        JSON.stringify(context.domElements),
+      );
       sectionTypes.push({
         type: 'domElements',
         used: domTokens,
-        budget: budget.domElements
+        budget: budget.domElements,
       });
       allocation.used += Math.min(domTokens, budget.domElements);
     }
 
     // Workspace context
     if (context.workspaceMetadata) {
-      const workspaceTokens = this.estimateTokens(JSON.stringify(context.workspaceMetadata));
+      const workspaceTokens = this.estimateTokens(
+        JSON.stringify(context.workspaceMetadata),
+      );
       sectionTypes.push({
         type: 'workspaceContext',
         used: workspaceTokens,
-        budget: budget.workspaceContext
+        budget: budget.workspaceContext,
       });
       allocation.used += Math.min(workspaceTokens, budget.workspaceContext);
     }
 
     allocation.sections = sectionTypes;
-    
+
     this.logger.info('Token allocation complete', {
       total: allocation.total,
       used: allocation.used,
-      remaining: allocation.total - allocation.used
+      remaining: allocation.total - allocation.used,
     });
 
     return allocation;
@@ -127,8 +135,10 @@ export class TokenManager {
 
   trimToFit(sections: PromptSection[], budget: number): PromptSection[] {
     // Sort sections by priority (lower number = higher priority)
-    const sortedSections = [...sections].sort((a, b) => a.priority - b.priority);
-    
+    const sortedSections = [...sections].sort(
+      (a, b) => a.priority - b.priority,
+    );
+
     let totalTokens = 0;
     const includedSections: PromptSection[] = [];
     const trimmedSections: PromptSection[] = [];
@@ -141,7 +151,8 @@ export class TokenManager {
       } else {
         // Try to trim the section to fit remaining budget
         const remainingBudget = budget - totalTokens;
-        if (remainingBudget > 100) { // Only include if we have reasonable space
+        if (remainingBudget > 100) {
+          // Only include if we have reasonable space
           const trimmedSection = this.trimSection(section, remainingBudget);
           if (trimmedSection) {
             trimmedSections.push(trimmedSection);
@@ -154,27 +165,30 @@ export class TokenManager {
     }
 
     const allSections = [...includedSections, ...trimmedSections];
-    
+
     this.logger.info('Trimmed sections to fit budget', {
       originalCount: sections.length,
       includedCount: allSections.length,
       totalTokens,
-      budget
+      budget,
     });
 
     return allSections;
   }
 
-  private trimSection(section: PromptSection, maxTokens: number): PromptSection | null {
+  private trimSection(
+    section: PromptSection,
+    maxTokens: number,
+  ): PromptSection | null {
     const estimatedChars = maxTokens * this.CHARS_PER_TOKEN;
-    
+
     if (section.content.length <= estimatedChars) {
       return section;
     }
 
     // Find a good break point (end of line, paragraph, or sentence)
     let breakPoint = estimatedChars;
-    
+
     // Try to break at paragraph
     const paragraphBreak = section.content.lastIndexOf('\n\n', breakPoint);
     if (paragraphBreak > estimatedChars * 0.7) {
@@ -193,16 +207,19 @@ export class TokenManager {
       }
     }
 
-    const trimmedContent = section.content.substring(0, breakPoint) + '\n... (content truncated)';
-    
+    const trimmedContent =
+      section.content.substring(0, breakPoint) + '\n... (content truncated)';
+
     return {
       ...section,
       content: trimmedContent,
-      tokens: this.estimateTokens(trimmedContent)
+      tokens: this.estimateTokens(trimmedContent),
     };
   }
 
-  getBudgetStrategy(strategy: 'conservative' | 'balanced' | 'aggressive'): number {
+  getBudgetStrategy(
+    strategy: 'conservative' | 'balanced' | 'aggressive',
+  ): number {
     switch (strategy) {
       case 'conservative':
         return 0.8; // Use 80% of max tokens

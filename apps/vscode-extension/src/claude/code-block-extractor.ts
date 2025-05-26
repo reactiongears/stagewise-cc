@@ -1,7 +1,7 @@
 import { Logger } from './logger';
 import * as vscode from 'vscode';
-import { CodeBlock } from './streaming-parser';
-import { MarkdownBlock } from './markdown-parser';
+import type { CodeBlock } from './streaming-parser';
+import type { MarkdownBlock } from './markdown-parser';
 
 /**
  * Validation result for code blocks
@@ -40,25 +40,27 @@ export class CodeBlockExtractor {
       basic: /^[\s\S]*$/,
       imports: /^import\s+.+from\s+['"].+['"];?$/m,
       exports: /^export\s+(?:default\s+)?(?:class|function|const|let|var)/m,
-      strict: /^(?:\/\/.*|\/\*[\s\S]*?\*\/|import|export|const|let|var|function|class|if|for|while|return|throw|try|catch)[\s\S]*$/
+      strict:
+        /^(?:\/\/.*|\/\*[\s\S]*?\*\/|import|export|const|let|var|function|class|if|for|while|return|throw|try|catch)[\s\S]*$/,
     },
     typescript: {
       basic: /^[\s\S]*$/,
-      typeAnnotations: /:\s*(?:string|number|boolean|void|any|unknown|never|\w+|{[^}]+}|\[[^\]]+\])/,
+      typeAnnotations:
+        /:\s*(?:string|number|boolean|void|any|unknown|never|\w+|{[^}]+}|\[[^\]]+\])/,
       interfaces: /^interface\s+\w+\s*{/m,
-      types: /^type\s+\w+\s*=/m
+      types: /^type\s+\w+\s*=/m,
     },
     python: {
       basic: /^[\s\S]*$/,
       imports: /^(?:import|from)\s+\w+/m,
       functions: /^def\s+\w+\s*\(/m,
-      classes: /^class\s+\w+/m
+      classes: /^class\s+\w+/m,
     },
     css: {
       basic: /^[\s\S]*$/,
       selectors: /^[.#\w\[\]:,\s>~+*]+\s*{/m,
-      properties: /[\w-]+\s*:\s*[^;]+;/
-    }
+      properties: /[\w-]+\s*:\s*[^;]+;/,
+    },
   };
 
   // Dangerous patterns to check
@@ -67,11 +69,13 @@ export class CodeBlockExtractor {
     network: /(?:http|socket|net|request|fetch|axios)/i,
     eval: /(?:eval|Function|setTimeout|setInterval)\s*\(/,
     process: /process\.\w+/,
-    globals: /(?:global|window|document)\.\w+/
+    globals: /(?:global|window|document)\.\w+/,
   };
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Code Extractor');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Code Extractor',
+    );
     this.logger = new Logger(this.outputChannel);
   }
 
@@ -90,19 +94,22 @@ export class CodeBlockExtractor {
       operation: block.metadata?.operation || 'unknown',
       metadata: {
         lineNumbers: block.metadata?.lineNumbers,
-        description: block.metadata?.title
-      }
+        description: block.metadata?.title,
+      },
     };
 
     // Add analysis results to metadata
     if (analysis.framework) {
       codeBlock.metadata = {
         ...codeBlock.metadata,
-        description: `${codeBlock.metadata?.description || ''} (${analysis.framework})`.trim()
+        description:
+          `${codeBlock.metadata?.description || ''} (${analysis.framework})`.trim(),
       };
     }
 
-    this.logger.debug(`Extracted ${language} code block: ${codeBlock.filePath || 'unnamed'}`);
+    this.logger.debug(
+      `Extracted ${language} code block: ${codeBlock.filePath || 'unnamed'}`,
+    );
     return codeBlock;
   }
 
@@ -114,7 +121,7 @@ export class CodeBlockExtractor {
       isValid: true,
       errors: [],
       warnings: [],
-      suggestions: []
+      suggestions: [],
     };
 
     // Check for empty code
@@ -162,25 +169,33 @@ export class CodeBlockExtractor {
     }
 
     // Check for TypeScript
-    if (this.syntaxPatterns.typescript.typeAnnotations.test(content) ||
-        this.syntaxPatterns.typescript.interfaces.test(content) ||
-        this.syntaxPatterns.typescript.types.test(content)) {
+    if (
+      this.syntaxPatterns.typescript.typeAnnotations.test(content) ||
+      this.syntaxPatterns.typescript.interfaces.test(content) ||
+      this.syntaxPatterns.typescript.types.test(content)
+    ) {
       return 'typescript';
     }
 
     // Check for JSX/TSX
     if (/<[A-Z]\w*/.test(content) || /<\/\w+>/.test(content)) {
-      return this.syntaxPatterns.typescript.typeAnnotations.test(content) ? 'tsx' : 'jsx';
+      return this.syntaxPatterns.typescript.typeAnnotations.test(content)
+        ? 'tsx'
+        : 'jsx';
     }
 
     // Check for specific language patterns
-    if (this.syntaxPatterns.python.imports.test(content) ||
-        this.syntaxPatterns.python.functions.test(content)) {
+    if (
+      this.syntaxPatterns.python.imports.test(content) ||
+      this.syntaxPatterns.python.functions.test(content)
+    ) {
       return 'python';
     }
 
-    if (this.syntaxPatterns.css.selectors.test(content) ||
-        this.syntaxPatterns.css.properties.test(content)) {
+    if (
+      this.syntaxPatterns.css.selectors.test(content) ||
+      this.syntaxPatterns.css.properties.test(content)
+    ) {
       return 'css';
     }
 
@@ -195,19 +210,25 @@ export class CodeBlockExtractor {
     const imports: Set<string> = new Set();
 
     // JavaScript/TypeScript imports
-    const esImports = code.matchAll(/import\s+(?:{[^}]+}|\*\s+as\s+\w+|\w+)\s+from\s+['"]([^'"]+)['"]/g);
+    const esImports = code.matchAll(
+      /import\s+(?:{[^}]+}|\*\s+as\s+\w+|\w+)\s+from\s+['"]([^'"]+)['"]/g,
+    );
     for (const match of esImports) {
       imports.add(match[1]);
     }
 
     // CommonJS requires
-    const cjsRequires = code.matchAll(/(?:const|let|var)\s+\w+\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/g);
+    const cjsRequires = code.matchAll(
+      /(?:const|let|var)\s+\w+\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    );
     for (const match of cjsRequires) {
       imports.add(match[1]);
     }
 
     // Python imports
-    const pyImports = code.matchAll(/(?:from\s+(\S+)\s+import|import\s+(\S+))/g);
+    const pyImports = code.matchAll(
+      /(?:from\s+(\S+)\s+import|import\s+(\S+))/g,
+    );
     for (const match of pyImports) {
       imports.add(match[1] || match[2]);
     }
@@ -229,8 +250,9 @@ export class CodeBlockExtractor {
     cleaned = cleaned.replace(/\r\n/g, '\n');
 
     // Remove trailing whitespace from each line
-    cleaned = cleaned.split('\n')
-      .map(line => line.trimEnd())
+    cleaned = cleaned
+      .split('\n')
+      .map((line) => line.trimEnd())
       .join('\n');
 
     // Remove excessive blank lines (more than 2)
@@ -266,19 +288,23 @@ export class CodeBlockExtractor {
       classes: [],
       dependencies: [],
       hasTypeScript: false,
-      hasJSX: false
+      hasJSX: false,
     };
 
     // JavaScript/TypeScript specific analysis
     if (['javascript', 'typescript', 'jsx', 'tsx'].includes(language)) {
       // Extract exports
-      const exportMatches = code.matchAll(/export\s+(?:default\s+)?(?:class|function|const|let|var|interface|type|enum)\s+(\w+)/g);
+      const exportMatches = code.matchAll(
+        /export\s+(?:default\s+)?(?:class|function|const|let|var|interface|type|enum)\s+(\w+)/g,
+      );
       for (const match of exportMatches) {
         analysis.exports.push(match[1]);
       }
 
       // Extract functions
-      const functionMatches = code.matchAll(/(?:function|const|let|var)\s+(\w+)\s*(?:=\s*)?(?:\([^)]*\)|<[^>]*>)*\s*(?:=>|{)/g);
+      const functionMatches = code.matchAll(
+        /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*)?(?:\([^)]*\)|<[^>]*>)*\s*(?:=>|{)/g,
+      );
       for (const match of functionMatches) {
         analysis.functions.push(match[1]);
       }
@@ -290,25 +316,26 @@ export class CodeBlockExtractor {
       }
 
       // Detect TypeScript
-      analysis.hasTypeScript = this.syntaxPatterns.typescript.typeAnnotations.test(code);
+      analysis.hasTypeScript =
+        this.syntaxPatterns.typescript.typeAnnotations.test(code);
 
       // Detect JSX
       analysis.hasJSX = /<[A-Z]\w*/.test(code) || /<\/\w+>/.test(code);
 
       // Detect framework
-      if (analysis.imports.some(imp => imp.includes('react'))) {
+      if (analysis.imports.some((imp) => imp.includes('react'))) {
         analysis.framework = 'React';
-      } else if (analysis.imports.some(imp => imp.includes('vue'))) {
+      } else if (analysis.imports.some((imp) => imp.includes('vue'))) {
         analysis.framework = 'Vue';
-      } else if (analysis.imports.some(imp => imp.includes('@angular'))) {
+      } else if (analysis.imports.some((imp) => imp.includes('@angular'))) {
         analysis.framework = 'Angular';
-      } else if (analysis.imports.some(imp => imp.includes('svelte'))) {
+      } else if (analysis.imports.some((imp) => imp.includes('svelte'))) {
         analysis.framework = 'Svelte';
       }
 
       // Extract dependencies
-      analysis.dependencies = analysis.imports.filter(imp => 
-        !imp.startsWith('.') && !imp.startsWith('/')
+      analysis.dependencies = analysis.imports.filter(
+        (imp) => !imp.startsWith('.') && !imp.startsWith('/'),
       );
     }
 
@@ -327,7 +354,9 @@ export class CodeBlockExtractor {
       if (char in brackets) {
         brackets[char as keyof typeof brackets]++;
       } else if (Object.values(bracketPairs).includes(char)) {
-        const opening = Object.entries(bracketPairs).find(([_, closing]) => closing === char)?.[0];
+        const opening = Object.entries(bracketPairs).find(
+          ([_, closing]) => closing === char,
+        )?.[0];
         if (opening && opening in brackets) {
           brackets[opening as keyof typeof brackets]--;
         }
@@ -335,31 +364,33 @@ export class CodeBlockExtractor {
     }
 
     // Check if any brackets are unmatched
-    if (Object.values(brackets).some(count => count !== 0)) {
+    if (Object.values(brackets).some((count) => count !== 0)) {
       return true;
     }
 
     // Check for common incomplete patterns
     const incompletePatterns = [
-      /\.\.\./,  // Ellipsis indicating omitted code
-      /\/\/ TODO/i,  // TODO comments
-      /\/\/ FIXME/i,  // FIXME comments
-      /\/\/ \.\.\./,  // Comment with ellipsis
-      /^\s*\/\/ More code here/im  // Placeholder comments
+      /\.\.\./, // Ellipsis indicating omitted code
+      /\/\/ TODO/i, // TODO comments
+      /\/\/ FIXME/i, // FIXME comments
+      /\/\/ \.\.\./, // Comment with ellipsis
+      /^\s*\/\/ More code here/im, // Placeholder comments
     ];
 
-    return incompletePatterns.some(pattern => pattern.test(code));
+    return incompletePatterns.some((pattern) => pattern.test(code));
   }
 
   /**
    * Get language-specific validator
    */
-  private getLanguageValidator(language: string): ((code: string) => ValidationResult) | null {
+  private getLanguageValidator(
+    language: string,
+  ): ((code: string) => ValidationResult) | null {
     const validators: Record<string, (code: string) => ValidationResult> = {
       javascript: (code) => this.validateJavaScript(code),
       typescript: (code) => this.validateTypeScript(code),
       python: (code) => this.validatePython(code),
-      css: (code) => this.validateCSS(code)
+      css: (code) => this.validateCSS(code),
     };
 
     return validators[language] || null;
@@ -373,7 +404,7 @@ export class CodeBlockExtractor {
       isValid: true,
       errors: [],
       warnings: [],
-      suggestions: []
+      suggestions: [],
     };
 
     // Check for common syntax errors
@@ -385,8 +416,14 @@ export class CodeBlockExtractor {
     const lines = code.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (line && !line.endsWith(';') && !line.endsWith('{') && !line.endsWith('}') && 
-          !line.startsWith('//') && !line.startsWith('*')) {
+      if (
+        line &&
+        !line.endsWith(';') &&
+        !line.endsWith('{') &&
+        !line.endsWith('}') &&
+        !line.startsWith('//') &&
+        !line.startsWith('*')
+      ) {
         // This is just a suggestion, not an error
         if (line.match(/^(const|let|var|return|import|export)\s+/)) {
           result.suggestions.push(`Line ${i + 1}: Consider adding semicolon`);
@@ -405,7 +442,9 @@ export class CodeBlockExtractor {
 
     // Additional TypeScript checks
     if (code.includes('any') && !code.includes('// eslint-disable')) {
-      result.warnings.push('Consider using more specific types instead of "any"');
+      result.warnings.push(
+        'Consider using more specific types instead of "any"',
+      );
     }
 
     return result;
@@ -419,7 +458,7 @@ export class CodeBlockExtractor {
       isValid: true,
       errors: [],
       warnings: [],
-      suggestions: []
+      suggestions: [],
     };
 
     // Check indentation consistency
@@ -451,7 +490,7 @@ export class CodeBlockExtractor {
       isValid: true,
       errors: [],
       warnings: [],
-      suggestions: []
+      suggestions: [],
     };
 
     // Check for missing closing braces
@@ -475,7 +514,9 @@ export class CodeBlockExtractor {
     // Check for dangerous patterns
     for (const [category, pattern] of Object.entries(this.dangerousPatterns)) {
       if (pattern.test(code)) {
-        issues.push(`Code contains potentially dangerous ${category} operations`);
+        issues.push(
+          `Code contains potentially dangerous ${category} operations`,
+        );
       }
     }
 
@@ -487,10 +528,34 @@ export class CodeBlockExtractor {
    */
   private isValidLanguage(language: string): boolean {
     const validLanguages = [
-      'javascript', 'typescript', 'jsx', 'tsx', 'python', 'css', 'scss', 'sass',
-      'html', 'xml', 'json', 'yaml', 'yml', 'markdown', 'md', 'plaintext',
-      'java', 'c', 'cpp', 'csharp', 'go', 'rust', 'php', 'ruby', 'swift',
-      'kotlin', 'vue', 'svelte'
+      'javascript',
+      'typescript',
+      'jsx',
+      'tsx',
+      'python',
+      'css',
+      'scss',
+      'sass',
+      'html',
+      'xml',
+      'json',
+      'yaml',
+      'yml',
+      'markdown',
+      'md',
+      'plaintext',
+      'java',
+      'c',
+      'cpp',
+      'csharp',
+      'go',
+      'rust',
+      'php',
+      'ruby',
+      'swift',
+      'kotlin',
+      'vue',
+      'svelte',
     ];
 
     return validLanguages.includes(language.toLowerCase());

@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Logger } from './logger';
-import { FileOperation, OperationType, RiskLevel } from './code-extractor';
+import { type FileOperation, OperationType } from './code-extractor';
 import { BackupManager } from './backup-manager';
-import { PermissionChecker, PermissionResult } from './permission-checker';
+import { PermissionChecker, type PermissionResult } from './permission-checker';
 import { WorkspaceManager } from './workspace-manager';
 import { AtomicOperationsManager } from './atomic-operations';
 
@@ -36,7 +36,6 @@ export interface OperationResult {
   };
 }
 
-
 /**
  * Handles file modifications in VSCode workspace
  */
@@ -50,7 +49,9 @@ export class FileModificationService {
   private activeTransaction: Transaction | null = null;
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude File Modifications');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude File Modifications',
+    );
     this.logger = new Logger(this.outputChannel);
     this.backupManager = new BackupManager();
     this.permissionChecker = new PermissionChecker();
@@ -61,11 +62,13 @@ export class FileModificationService {
   /**
    * Apply multiple file operations atomically
    */
-  async applyOperations(operations: FileOperation[]): Promise<OperationResult[]> {
+  async applyOperations(
+    operations: FileOperation[],
+  ): Promise<OperationResult[]> {
     // Use atomic operations manager for better transaction support
     const result = await this.atomicOperations.executeAtomic(operations, {
       validateBeforeApply: true,
-      createBackups: true
+      createBackups: true,
     });
 
     if (!result.success) {
@@ -78,19 +81,23 @@ export class FileModificationService {
       success: r.success,
       filePath: operations[index].targetPath,
       operation: operations[index].type,
-      error: r.error?.message
+      error: r.error?.message,
     }));
   }
 
   /**
    * Apply multiple file operations with legacy transaction handling
    */
-  private async applyOperationsLegacy(operations: FileOperation[]): Promise<OperationResult[]> {
+  private async applyOperationsLegacy(
+    operations: FileOperation[],
+  ): Promise<OperationResult[]> {
     if (operations.length === 0) {
       return [];
     }
 
-    this.logger.info(`Starting atomic operation batch with ${operations.length} operations`);
+    this.logger.info(
+      `Starting atomic operation batch with ${operations.length} operations`,
+    );
 
     // Start transaction
     const transaction = this.startTransaction(operations);
@@ -100,7 +107,9 @@ export class FileModificationService {
       // Validate permissions for all operations
       const permissionResult = await this.validatePermissions(operations);
       if (!permissionResult.allPermitted) {
-        throw new Error(`Permission denied: ${permissionResult.deniedReasons.join(', ')}`);
+        throw new Error(
+          `Permission denied: ${permissionResult.deniedReasons.join(', ')}`,
+        );
       }
 
       // Create backups for all affected files
@@ -125,7 +134,7 @@ export class FileModificationService {
       // Rollback on any failure
       this.logger.error('Operation batch failed, initiating rollback', error);
       await this.rollbackTransaction(transaction);
-      
+
       // Mark all uncompleted operations as failed
       for (const operation of operations) {
         if (!transaction.completed.has(operation.id)) {
@@ -134,7 +143,7 @@ export class FileModificationService {
             success: false,
             filePath: operation.targetPath,
             operation: operation.type,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
       }
@@ -157,7 +166,10 @@ export class FileModificationService {
       throw new Error(`File already exists: ${path}`);
     } catch (error) {
       // File doesn't exist, which is what we want
-      if ((error as any).code !== 'FileNotFound' && !(error as any).message?.includes('ENOENT')) {
+      if (
+        (error as any).code !== 'FileNotFound' &&
+        !(error as any).message?.includes('ENOENT')
+      ) {
         throw error;
       }
     }
@@ -192,15 +204,15 @@ export class FileModificationService {
 
     // Try to use workspace edit for better integration
     const edit = new vscode.WorkspaceEdit();
-    
+
     try {
       const document = await vscode.workspace.openTextDocument(uri);
       const fullRange = new vscode.Range(
         document.lineAt(0).range.start,
-        document.lineAt(document.lineCount - 1).range.end
+        document.lineAt(document.lineCount - 1).range.end,
       );
       edit.replace(uri, fullRange, content);
-      
+
       const success = await vscode.workspace.applyEdit(edit);
       if (!success) {
         throw new Error('Failed to apply workspace edit');
@@ -241,7 +253,9 @@ export class FileModificationService {
   /**
    * Validate permissions for operations
    */
-  async validatePermissions(operations: FileOperation[]): Promise<PermissionResult> {
+  async validatePermissions(
+    operations: FileOperation[],
+  ): Promise<PermissionResult> {
     return await this.permissionChecker.validateOperations(operations);
   }
 
@@ -255,7 +269,7 @@ export class FileModificationService {
       backups: new Map(),
       completed: new Set(),
       failed: new Set(),
-      startTime: new Date()
+      startTime: new Date(),
     };
 
     this.activeTransaction = transaction;
@@ -265,9 +279,14 @@ export class FileModificationService {
   /**
    * Apply a single operation
    */
-  private async applyOperation(operation: FileOperation, transaction: Transaction): Promise<OperationResult> {
+  private async applyOperation(
+    operation: FileOperation,
+    transaction: Transaction,
+  ): Promise<OperationResult> {
     try {
-      this.logger.debug(`Applying ${operation.type} operation to ${operation.targetPath}`);
+      this.logger.debug(
+        `Applying ${operation.type} operation to ${operation.targetPath}`,
+      );
 
       switch (operation.type) {
         case OperationType.CREATE:
@@ -283,11 +302,17 @@ export class FileModificationService {
           break;
 
         case OperationType.MOVE:
-          await this.moveFile(operation.sourcePath || operation.targetPath, operation.targetPath);
+          await this.moveFile(
+            operation.sourcePath || operation.targetPath,
+            operation.targetPath,
+          );
           break;
 
         case OperationType.APPEND:
-          await this.appendToFile(operation.targetPath, operation.content || '');
+          await this.appendToFile(
+            operation.targetPath,
+            operation.content || '',
+          );
           break;
 
         default:
@@ -301,17 +326,17 @@ export class FileModificationService {
         success: true,
         filePath: operation.targetPath,
         operation: operation.type,
-        backup: transaction.backups.get(operation.targetPath)
+        backup: transaction.backups.get(operation.targetPath),
       };
     } catch (error) {
       transaction.failed.add(operation.id);
-      
+
       return {
         operationId: operation.id,
         success: false,
         filePath: operation.targetPath,
         operation: operation.type,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -319,13 +344,18 @@ export class FileModificationService {
   /**
    * Create backups for all affected files
    */
-  private async createBackups(transaction: Transaction, operations: FileOperation[]): Promise<void> {
+  private async createBackups(
+    transaction: Transaction,
+    operations: FileOperation[],
+  ): Promise<void> {
     const filesToBackup = new Set<string>();
 
     for (const operation of operations) {
-      if (operation.type === OperationType.UPDATE || 
-          operation.type === OperationType.DELETE ||
-          operation.type === OperationType.APPEND) {
+      if (
+        operation.type === OperationType.UPDATE ||
+        operation.type === OperationType.DELETE ||
+        operation.type === OperationType.APPEND
+      ) {
         filesToBackup.add(operation.targetPath);
       }
       if (operation.type === OperationType.MOVE && operation.sourcePath) {
@@ -339,7 +369,9 @@ export class FileModificationService {
         transaction.backups.set(filePath, backupId);
         this.logger.debug(`Created backup for ${filePath}: ${backupId}`);
       } catch (error) {
-        this.logger.warning(`Failed to create backup for ${filePath}: ${error}`);
+        this.logger.warning(
+          `Failed to create backup for ${filePath}: ${error}`,
+        );
         // Don't fail if backup creation fails for non-existent files
       }
     }
@@ -365,7 +397,7 @@ export class FileModificationService {
 
     // Restore backups in reverse order
     const backupEntries = Array.from(transaction.backups.entries()).reverse();
-    
+
     for (const [filePath, backupId] of backupEntries) {
       try {
         await this.backupManager.restoreBackup(backupId);
@@ -377,12 +409,18 @@ export class FileModificationService {
 
     // Clean up any created files
     for (const operation of transaction.operations) {
-      if (operation.type === OperationType.CREATE && transaction.completed.has(operation.id)) {
+      if (
+        operation.type === OperationType.CREATE &&
+        transaction.completed.has(operation.id)
+      ) {
         try {
           await this.deleteFile(operation.targetPath);
           this.logger.info(`Cleaned up created file: ${operation.targetPath}`);
         } catch (error) {
-          this.logger.error(`Failed to clean up file: ${operation.targetPath}`, error);
+          this.logger.error(
+            `Failed to clean up file: ${operation.targetPath}`,
+            error,
+          );
         }
       }
     }
@@ -391,7 +429,10 @@ export class FileModificationService {
   /**
    * Move/rename a file
    */
-  private async moveFile(sourcePath: string, targetPath: string): Promise<void> {
+  private async moveFile(
+    sourcePath: string,
+    targetPath: string,
+  ): Promise<void> {
     const sourceUri = vscode.Uri.file(sourcePath);
     const targetUri = vscode.Uri.file(targetPath);
 
@@ -424,8 +465,9 @@ export class FileModificationService {
       const currentContent = decoder.decode(existingContent);
 
       // Append new content
-      const newContent = currentContent + (currentContent.endsWith('\n') ? '' : '\n') + content;
-      
+      const newContent =
+        currentContent + (currentContent.endsWith('\n') ? '' : '\n') + content;
+
       // Write back
       const encoder = new TextEncoder();
       await vscode.workspace.fs.writeFile(uri, encoder.encode(newContent));
@@ -455,13 +497,18 @@ export class FileModificationService {
    */
   async withProgress<T>(
     title: string,
-    task: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>
+    task: (
+      progress: vscode.Progress<{ message?: string; increment?: number }>,
+    ) => Promise<T>,
   ): Promise<T> {
-    return vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title,
-      cancellable: true
-    }, task);
+    return vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title,
+        cancellable: true,
+      },
+      task,
+    );
   }
 
   /**

@@ -1,19 +1,22 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ClaudeConfigService } from '../claude/config-service';
+import type { ClaudeConfigService } from '../claude/config-service';
 import { ConfigurationScope, ClaudeModel } from '../claude/config-types';
 
 export function registerClaudeConfigCommands(
   context: vscode.ExtensionContext,
-  configService: ClaudeConfigService
+  configService: ClaudeConfigService,
 ): void {
   // Open Settings Command
   const openSettingsCommand = vscode.commands.registerCommand(
     'stagewise-cc.claude.openSettings',
     () => {
-      vscode.commands.executeCommand('workbench.action.openSettings', 'stagewise.claude');
-    }
+      vscode.commands.executeCommand(
+        'workbench.action.openSettings',
+        'stagewise.claude',
+      );
+    },
   );
 
   // Reset Settings Command
@@ -24,22 +27,25 @@ export function registerClaudeConfigCommands(
         'Are you sure you want to reset Claude settings to defaults?',
         { modal: true },
         'Reset Workspace Settings',
-        'Reset User Settings'
+        'Reset User Settings',
       );
 
       if (choice) {
         try {
-          const scope = choice === 'Reset Workspace Settings' 
-            ? ConfigurationScope.WORKSPACE 
-            : ConfigurationScope.USER;
-          
+          const scope =
+            choice === 'Reset Workspace Settings'
+              ? ConfigurationScope.WORKSPACE
+              : ConfigurationScope.USER;
+
           await configService.resetConfiguration(scope);
-          vscode.window.showInformationMessage(`Claude settings reset to defaults (${scope} scope)`);
+          vscode.window.showInformationMessage(
+            `Claude settings reset to defaults (${scope} scope)`,
+          );
         } catch (error) {
           vscode.window.showErrorMessage(`Failed to reset settings: ${error}`);
         }
       }
-    }
+    },
   );
 
   // Export Configuration Command
@@ -48,25 +54,28 @@ export function registerClaudeConfigCommands(
     async () => {
       try {
         const configData = await configService.exportConfiguration();
-        
+
         const saveUri = await vscode.window.showSaveDialog({
-          defaultUri: vscode.Uri.file(path.join(
-            vscode.workspace.rootPath || '',
-            'claude-config.json'
-          )),
+          defaultUri: vscode.Uri.file(
+            path.join(vscode.workspace.rootPath || '', 'claude-config.json'),
+          ),
           filters: {
-            'JSON': ['json']
-          }
+            JSON: ['json'],
+          },
         });
 
         if (saveUri) {
           await fs.writeFile(saveUri.fsPath, configData, 'utf8');
-          vscode.window.showInformationMessage('Configuration exported successfully');
+          vscode.window.showInformationMessage(
+            'Configuration exported successfully',
+          );
         }
       } catch (error) {
-        vscode.window.showErrorMessage(`Failed to export configuration: ${error}`);
+        vscode.window.showErrorMessage(
+          `Failed to export configuration: ${error}`,
+        );
       }
-    }
+    },
   );
 
   // Import Configuration Command
@@ -79,8 +88,8 @@ export function registerClaudeConfigCommands(
           canSelectFolders: false,
           canSelectMany: false,
           filters: {
-            'JSON': ['json']
-          }
+            JSON: ['json'],
+          },
         });
 
         if (openUri && openUri[0]) {
@@ -88,9 +97,11 @@ export function registerClaudeConfigCommands(
           await configService.importConfiguration(configData);
         }
       } catch (error) {
-        vscode.window.showErrorMessage(`Failed to import configuration: ${error}`);
+        vscode.window.showErrorMessage(
+          `Failed to import configuration: ${error}`,
+        );
       }
-    }
+    },
   );
 
   // Save Profile Command
@@ -105,13 +116,13 @@ export function registerClaudeConfigCommands(
             return 'Profile name is required';
           }
           return null;
-        }
+        },
       });
 
       if (name) {
         const description = await vscode.window.showInputBox({
           prompt: 'Enter a description for this profile (optional)',
-          placeHolder: 'Configuration for Python development'
+          placeHolder: 'Configuration for Python development',
         });
 
         try {
@@ -120,7 +131,7 @@ export function registerClaudeConfigCommands(
           vscode.window.showErrorMessage(`Failed to save profile: ${error}`);
         }
       }
-    }
+    },
   );
 
   // Load Profile Command
@@ -135,14 +146,14 @@ export function registerClaudeConfigCommands(
         return;
       }
 
-      const items = profileNames.map(name => ({
+      const items = profileNames.map((name) => ({
         label: name,
         description: profiles[name].description || '',
-        detail: profiles[name].isDefault ? '(Default)' : undefined
+        detail: profiles[name].isDefault ? '(Default)' : undefined,
       }));
 
       const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: 'Select a profile to load'
+        placeHolder: 'Select a profile to load',
       });
 
       if (selected) {
@@ -152,7 +163,7 @@ export function registerClaudeConfigCommands(
           vscode.window.showErrorMessage(`Failed to load profile: ${error}`);
         }
       }
-    }
+    },
   );
 
   // Delete Profile Command
@@ -168,26 +179,30 @@ export function registerClaudeConfigCommands(
       }
 
       const selected = await vscode.window.showQuickPick(profileNames, {
-        placeHolder: 'Select a profile to delete'
+        placeHolder: 'Select a profile to delete',
       });
 
       if (selected) {
         const confirm = await vscode.window.showWarningMessage(
           `Are you sure you want to delete the profile "${selected}"?`,
           { modal: true },
-          'Delete'
+          'Delete',
         );
 
         if (confirm === 'Delete') {
           try {
             await configService.deleteProfile(selected);
-            vscode.window.showInformationMessage(`Profile "${selected}" deleted`);
+            vscode.window.showInformationMessage(
+              `Profile "${selected}" deleted`,
+            );
           } catch (error) {
-            vscode.window.showErrorMessage(`Failed to delete profile: ${error}`);
+            vscode.window.showErrorMessage(
+              `Failed to delete profile: ${error}`,
+            );
           }
         }
       }
-    }
+    },
   );
 
   // Quick Configure Command
@@ -201,8 +216,8 @@ export function registerClaudeConfigCommands(
           config: {
             model: ClaudeModel.CLAUDE_3_HAIKU,
             temperature: 0.3,
-            maxTokens: 2048
-          }
+            maxTokens: 2048,
+          },
         },
         {
           label: '$(beaker) Balanced',
@@ -210,8 +225,8 @@ export function registerClaudeConfigCommands(
           config: {
             model: ClaudeModel.CLAUDE_4_SONNET,
             temperature: 0.7,
-            maxTokens: 4096
-          }
+            maxTokens: 4096,
+          },
         },
         {
           label: '$(telescope) Advanced & Creative',
@@ -219,24 +234,28 @@ export function registerClaudeConfigCommands(
           config: {
             model: ClaudeModel.CLAUDE_4_OPUS,
             temperature: 0.9,
-            maxTokens: 8192
-          }
-        }
+            maxTokens: 8192,
+          },
+        },
       ];
 
       const selected = await vscode.window.showQuickPick(choices, {
-        placeHolder: 'Select a configuration preset'
+        placeHolder: 'Select a configuration preset',
       });
 
       if (selected) {
         try {
           await configService.updateConfiguration(selected.config);
-          vscode.window.showInformationMessage('Configuration updated successfully');
+          vscode.window.showInformationMessage(
+            'Configuration updated successfully',
+          );
         } catch (error) {
-          vscode.window.showErrorMessage(`Failed to update configuration: ${error}`);
+          vscode.window.showErrorMessage(
+            `Failed to update configuration: ${error}`,
+          );
         }
       }
-    }
+    },
   );
 
   // Add commands to subscriptions
@@ -248,6 +267,6 @@ export function registerClaudeConfigCommands(
     saveProfileCommand,
     loadProfileCommand,
     deleteProfileCommand,
-    quickConfigureCommand
+    quickConfigureCommand,
   );
 }

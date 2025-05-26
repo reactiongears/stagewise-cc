@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { FileOperation, OperationType } from './code-extractor';
-import { BackupManager } from './backup-manager';
+import { type FileOperation, OperationType } from './code-extractor';
+import type { BackupManager } from './backup-manager';
 import { Logger } from './logger';
 
 /**
@@ -53,10 +53,12 @@ export class AtomicOperationsManager {
   private logger: Logger;
   private backupManager: BackupManager;
   private activeTransactions: Map<string, Transaction> = new Map();
-  private transactionTimeout: number = 60000; // 1 minute default
+  private transactionTimeout = 60000; // 1 minute default
 
   constructor(backupManager: BackupManager) {
-    const outputChannel = vscode.window.createOutputChannel('Claude Atomic Operations');
+    const outputChannel = vscode.window.createOutputChannel(
+      'Claude Atomic Operations',
+    );
     this.logger = new Logger(outputChannel);
     this.backupManager = backupManager;
   }
@@ -66,7 +68,7 @@ export class AtomicOperationsManager {
    */
   async executeAtomic(
     operations: FileOperation[],
-    options: AtomicOperationOptions = {}
+    options: AtomicOperationOptions = {},
   ): Promise<AtomicOperationResult> {
     const transaction = this.createTransaction(operations);
     this.activeTransactions.set(transaction.id, transaction);
@@ -74,7 +76,9 @@ export class AtomicOperationsManager {
     try {
       // Start transaction
       transaction.status = 'in-progress';
-      this.logger.info(`Starting atomic transaction ${transaction.id} with ${operations.length} operations`);
+      this.logger.info(
+        `Starting atomic transaction ${transaction.id} with ${operations.length} operations`,
+      );
 
       // Validate operations if requested
       if (options.validateBeforeApply) {
@@ -87,42 +91,44 @@ export class AtomicOperationsManager {
       }
 
       // Apply operations
-      const results = await this.applyOperations(transaction, options.dryRun || false);
+      const results = await this.applyOperations(
+        transaction,
+        options.dryRun || false,
+      );
 
       // Check if all operations succeeded
-      const allSuccessful = results.every(r => r.success);
+      const allSuccessful = results.every((r) => r.success);
 
       if (allSuccessful) {
         // Commit transaction
         await this.commitTransaction(transaction);
-        
+
         return {
           success: true,
           transaction,
-          results
+          results,
         };
       } else {
         // Rollback on partial failure
         throw new Error('One or more operations failed');
       }
-
     } catch (error) {
       // Rollback transaction
       this.logger.error(`Transaction ${transaction.id} failed`, error);
-      
+
       const rollbackSuccessful = await this.rollbackTransaction(transaction);
-      
+
       return {
         success: false,
         transaction,
         results: [],
         error: error instanceof Error ? error : new Error(String(error)),
-        rollbackSuccessful
+        rollbackSuccessful,
       };
     } finally {
       // Clean up
       this.activeTransactions.delete(transaction.id);
-      
+
       // Set timeout to clean up old backups
       if (options.createBackups !== false) {
         setTimeout(() => {
@@ -142,7 +148,7 @@ export class AtomicOperationsManager {
       backups: new Map(),
       appliedOperations: new Set(),
       startTime: new Date(),
-      status: 'pending'
+      status: 'pending',
     };
   }
 
@@ -159,14 +165,18 @@ export class AtomicOperationsManager {
   private async validateOperations(operations: FileOperation[]): Promise<void> {
     for (const operation of operations) {
       // Check if file exists for update/delete operations
-      if (operation.type === OperationType.UPDATE || 
-          operation.type === OperationType.DELETE ||
-          operation.type === OperationType.APPEND) {
+      if (
+        operation.type === OperationType.UPDATE ||
+        operation.type === OperationType.DELETE ||
+        operation.type === OperationType.APPEND
+      ) {
         const uri = vscode.Uri.file(operation.targetPath);
         try {
           await vscode.workspace.fs.stat(uri);
         } catch (error) {
-          throw new Error(`File not found for ${operation.type} operation: ${operation.targetPath}`);
+          throw new Error(
+            `File not found for ${operation.type} operation: ${operation.targetPath}`,
+          );
         }
       }
 
@@ -175,18 +185,24 @@ export class AtomicOperationsManager {
         const uri = vscode.Uri.file(operation.targetPath);
         try {
           await vscode.workspace.fs.stat(uri);
-          throw new Error(`File already exists for CREATE operation: ${operation.targetPath}`);
+          throw new Error(
+            `File already exists for CREATE operation: ${operation.targetPath}`,
+          );
         } catch (error) {
           // File doesn't exist, which is expected
         }
       }
 
       // Validate content is provided for operations that need it
-      if ((operation.type === OperationType.CREATE || 
-           operation.type === OperationType.UPDATE || 
-           operation.type === OperationType.APPEND) && 
-          !operation.content) {
-        throw new Error(`No content provided for ${operation.type} operation: ${operation.targetPath}`);
+      if (
+        (operation.type === OperationType.CREATE ||
+          operation.type === OperationType.UPDATE ||
+          operation.type === OperationType.APPEND) &&
+        !operation.content
+      ) {
+        throw new Error(
+          `No content provided for ${operation.type} operation: ${operation.targetPath}`,
+        );
       }
     }
   }
@@ -194,18 +210,28 @@ export class AtomicOperationsManager {
   /**
    * Create backups for all files that will be modified
    */
-  private async createTransactionBackups(transaction: Transaction): Promise<void> {
+  private async createTransactionBackups(
+    transaction: Transaction,
+  ): Promise<void> {
     for (const operation of transaction.operations) {
-      if (operation.type === OperationType.UPDATE || 
-          operation.type === OperationType.DELETE ||
-          operation.type === OperationType.APPEND) {
+      if (
+        operation.type === OperationType.UPDATE ||
+        operation.type === OperationType.DELETE ||
+        operation.type === OperationType.APPEND
+      ) {
         try {
-          const backupPath = await this.backupManager.createBackup(operation.targetPath);
+          const backupPath = await this.backupManager.createBackup(
+            operation.targetPath,
+          );
           transaction.backups.set(operation.targetPath, backupPath);
-          this.logger.debug(`Created backup for ${operation.targetPath} at ${backupPath}`);
+          this.logger.debug(
+            `Created backup for ${operation.targetPath} at ${backupPath}`,
+          );
         } catch (error) {
           // File doesn't exist, no backup needed
-          this.logger.debug(`No backup needed for ${operation.targetPath} (file not found)`);
+          this.logger.debug(
+            `No backup needed for ${operation.targetPath} (file not found)`,
+          );
         }
       }
     }
@@ -216,7 +242,7 @@ export class AtomicOperationsManager {
    */
   private async applyOperations(
     transaction: Transaction,
-    dryRun: boolean
+    dryRun: boolean,
   ): Promise<OperationResult[]> {
     const results: OperationResult[] = [];
 
@@ -227,30 +253,29 @@ export class AtomicOperationsManager {
           results.push({
             operationId: operation.id,
             success: true,
-            message: `[DRY RUN] Would ${operation.type} ${operation.targetPath}`
+            message: `[DRY RUN] Would ${operation.type} ${operation.targetPath}`,
           });
           continue;
         }
 
         // Apply operation
         await this.applyOperation(operation);
-        
+
         transaction.appliedOperations.add(operation.id);
-        
+
         results.push({
           operationId: operation.id,
           success: true,
-          message: `Successfully applied ${operation.type} to ${operation.targetPath}`
+          message: `Successfully applied ${operation.type} to ${operation.targetPath}`,
         });
-
       } catch (error) {
         results.push({
           operationId: operation.id,
           success: false,
           error: error instanceof Error ? error : new Error(String(error)),
-          message: `Failed to apply ${operation.type} to ${operation.targetPath}`
+          message: `Failed to apply ${operation.type} to ${operation.targetPath}`,
         });
-        
+
         // Stop on first failure
         throw error;
       }
@@ -271,7 +296,10 @@ export class AtomicOperationsManager {
         if (!operation.content) {
           throw new Error('No content provided for operation');
         }
-        await vscode.workspace.fs.writeFile(uri, Buffer.from(operation.content, 'utf8'));
+        await vscode.workspace.fs.writeFile(
+          uri,
+          Buffer.from(operation.content, 'utf8'),
+        );
         break;
 
       case OperationType.APPEND:
@@ -281,10 +309,16 @@ export class AtomicOperationsManager {
         try {
           const existing = await vscode.workspace.fs.readFile(uri);
           const newContent = existing.toString() + '\n' + operation.content;
-          await vscode.workspace.fs.writeFile(uri, Buffer.from(newContent, 'utf8'));
+          await vscode.workspace.fs.writeFile(
+            uri,
+            Buffer.from(newContent, 'utf8'),
+          );
         } catch (error) {
           // File doesn't exist, create it
-          await vscode.workspace.fs.writeFile(uri, Buffer.from(operation.content, 'utf8'));
+          await vscode.workspace.fs.writeFile(
+            uri,
+            Buffer.from(operation.content, 'utf8'),
+          );
         }
         break;
 
@@ -303,7 +337,7 @@ export class AtomicOperationsManager {
   private async commitTransaction(transaction: Transaction): Promise<void> {
     transaction.status = 'committed';
     this.logger.info(`Transaction ${transaction.id} committed successfully`);
-    
+
     // Optionally keep backups for a while before cleanup
     // They will be cleaned up after timeout
   }
@@ -311,16 +345,20 @@ export class AtomicOperationsManager {
   /**
    * Rollback transaction
    */
-  private async rollbackTransaction(transaction: Transaction): Promise<boolean> {
+  private async rollbackTransaction(
+    transaction: Transaction,
+  ): Promise<boolean> {
     this.logger.info(`Rolling back transaction ${transaction.id}`);
-    
+
     let rollbackSuccessful = true;
 
     // Rollback applied operations in reverse order
     const appliedOps = Array.from(transaction.appliedOperations).reverse();
-    
+
     for (const operationId of appliedOps) {
-      const operation = transaction.operations.find(op => op.id === operationId);
+      const operation = transaction.operations.find(
+        (op) => op.id === operationId,
+      );
       if (!operation) continue;
 
       try {
@@ -339,7 +377,10 @@ export class AtomicOperationsManager {
   /**
    * Rollback a single operation
    */
-  private async rollbackOperation(operation: FileOperation, transaction: Transaction): Promise<void> {
+  private async rollbackOperation(
+    operation: FileOperation,
+    transaction: Transaction,
+  ): Promise<void> {
     const uri = vscode.Uri.file(operation.targetPath);
 
     switch (operation.type) {
@@ -361,7 +402,9 @@ export class AtomicOperationsManager {
           await this.backupManager.restoreBackup(backupPath);
         } else if (operation.type === OperationType.DELETE) {
           // If we deleted a file but have no backup, we can't restore it
-          throw new Error(`Cannot restore deleted file ${operation.targetPath} - no backup found`);
+          throw new Error(
+            `Cannot restore deleted file ${operation.targetPath} - no backup found`,
+          );
         }
         break;
     }
@@ -370,7 +413,9 @@ export class AtomicOperationsManager {
   /**
    * Clean up transaction backups
    */
-  private async cleanupTransactionBackups(transaction: Transaction): Promise<void> {
+  private async cleanupTransactionBackups(
+    transaction: Transaction,
+  ): Promise<void> {
     for (const [originalPath, backupPath] of transaction.backups) {
       try {
         // Backup will be cleaned up automatically by cleanup process
@@ -407,8 +452,11 @@ export class AtomicOperationsManager {
     // Rollback any active transactions
     for (const transaction of this.activeTransactions.values()) {
       if (transaction.status === 'in-progress') {
-        this.rollbackTransaction(transaction).catch(error => {
-          this.logger.error(`Failed to rollback transaction ${transaction.id} during disposal`, error);
+        this.rollbackTransaction(transaction).catch((error) => {
+          this.logger.error(
+            `Failed to rollback transaction ${transaction.id} during disposal`,
+            error,
+          );
         });
       }
     }

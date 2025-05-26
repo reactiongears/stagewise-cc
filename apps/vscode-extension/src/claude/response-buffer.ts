@@ -14,15 +14,15 @@ export interface BufferConfig {
  * Manages streaming response buffering with smart boundary detection
  */
 export class ResponseBuffer {
-  private buffer: string = '';
-  private processedLength: number = 0;
+  private buffer = '';
+  private processedLength = 0;
   private config: BufferConfig;
   private logger: Logger;
   private outputChannel: vscode.OutputChannel;
   private metrics = {
     totalBytesProcessed: 0,
     chunksReceived: 0,
-    blocksExtracted: 0
+    blocksExtracted: 0,
   };
 
   constructor(config?: Partial<BufferConfig>) {
@@ -30,10 +30,12 @@ export class ResponseBuffer {
       maxSize: 10 * 1024 * 1024, // 10MB default
       flushThreshold: 0.8, // Flush at 80% capacity
       enableCompression: true,
-      ...config
+      ...config,
     };
 
-    this.outputChannel = vscode.window.createOutputChannel('Claude Response Buffer');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Response Buffer',
+    );
     this.logger = new Logger(this.outputChannel);
   }
 
@@ -43,18 +45,22 @@ export class ResponseBuffer {
   append(chunk: string): void {
     // Handle Unicode boundaries
     const safeChunk = this.ensureUnicodeBoundary(chunk);
-    
+
     this.buffer += safeChunk;
     this.metrics.chunksReceived++;
     this.metrics.totalBytesProcessed += safeChunk.length;
 
     // Check buffer size
     if (this.buffer.length > this.config.maxSize * this.config.flushThreshold) {
-      this.logger.warning('Buffer approaching maximum size, triggering auto-flush');
+      this.logger.warning(
+        'Buffer approaching maximum size, triggering auto-flush',
+      );
       this.autoFlush();
     }
 
-    this.logger.debug(`Appended ${safeChunk.length} bytes, buffer size: ${this.buffer.length}`);
+    this.logger.debug(
+      `Appended ${safeChunk.length} bytes, buffer size: ${this.buffer.length}`,
+    );
   }
 
   /**
@@ -62,7 +68,7 @@ export class ResponseBuffer {
    */
   extractCompleteLines(): string[] {
     const lines: string[] = [];
-    let lastNewlineIndex = this.buffer.lastIndexOf('\n');
+    const lastNewlineIndex = this.buffer.lastIndexOf('\n');
 
     if (lastNewlineIndex === -1) {
       return lines;
@@ -73,7 +79,7 @@ export class ResponseBuffer {
     const remainingContent = this.buffer.substring(lastNewlineIndex + 1);
 
     // Split into lines
-    lines.push(...completeContent.split('\n').filter(line => line !== ''));
+    lines.push(...completeContent.split('\n').filter((line) => line !== ''));
 
     // Update buffer with remaining content
     this.buffer = remainingContent;
@@ -88,7 +94,7 @@ export class ResponseBuffer {
   extractCompleteBlocks(): string[] {
     const blocks: string[] = [];
     const codeBlockRegex = /```[\s\S]*?```/g;
-    
+
     let match;
     let lastIndex = 0;
     const newBuffer: string[] = [];
@@ -102,7 +108,7 @@ export class ResponseBuffer {
       // Extract the complete block
       blocks.push(match[0]);
       this.metrics.blocksExtracted++;
-      
+
       lastIndex = match.index + match[0].length;
     }
 
@@ -148,7 +154,7 @@ export class ResponseBuffer {
       processedLength: this.processedLength,
       metrics: { ...this.metrics },
       isFull: this.buffer.length >= this.config.maxSize,
-      fillPercentage: (this.buffer.length / this.config.maxSize) * 100
+      fillPercentage: (this.buffer.length / this.config.maxSize) * 100,
     };
   }
 
@@ -163,26 +169,26 @@ export class ResponseBuffer {
     // Check last 4 bytes for incomplete UTF-8 sequences
     for (let i = Math.max(0, bytes.length - 4); i < bytes.length; i++) {
       const byte = bytes[i];
-      
+
       // UTF-8 continuation byte
-      if ((byte & 0xC0) === 0x80) {
+      if ((byte & 0xc0) === 0x80) {
         continue;
       }
-      
+
       // Start of multi-byte sequence
-      if ((byte & 0xE0) === 0xC0) {
+      if ((byte & 0xe0) === 0xc0) {
         // 2-byte sequence
         if (i + 1 >= bytes.length) {
           truncateBytes = bytes.length - i;
           break;
         }
-      } else if ((byte & 0xF0) === 0xE0) {
+      } else if ((byte & 0xf0) === 0xe0) {
         // 3-byte sequence
         if (i + 2 >= bytes.length) {
           truncateBytes = bytes.length - i;
           break;
         }
-      } else if ((byte & 0xF8) === 0xF0) {
+      } else if ((byte & 0xf8) === 0xf0) {
         // 4-byte sequence
         if (i + 3 >= bytes.length) {
           truncateBytes = bytes.length - i;
@@ -204,10 +210,10 @@ export class ResponseBuffer {
   private compressWhitespace(content: string): string {
     // Replace multiple spaces with single space
     let compressed = content.replace(/[ \t]+/g, ' ');
-    
+
     // Replace multiple newlines with double newline
     compressed = compressed.replace(/\n{3,}/g, '\n\n');
-    
+
     return compressed;
   }
 
@@ -218,14 +224,14 @@ export class ResponseBuffer {
     // Find a safe point to flush (after a complete line or block)
     const flushPoint = Math.min(
       this.buffer.lastIndexOf('\n\n'),
-      this.buffer.lastIndexOf('```')
+      this.buffer.lastIndexOf('```'),
     );
 
     if (flushPoint > 0) {
       const flushedContent = this.buffer.substring(0, flushPoint);
       this.buffer = this.buffer.substring(flushPoint);
       this.processedLength += flushedContent.length;
-      
+
       this.logger.info(`Auto-flushed ${flushedContent.length} bytes`);
     }
   }
@@ -246,7 +252,10 @@ export class ResponseBuffer {
       bufferSize: this.buffer.length,
       bufferSizeMB: (this.buffer.length / (1024 * 1024)).toFixed(2),
       maxSizeMB: (this.config.maxSize / (1024 * 1024)).toFixed(2),
-      utilizationPercent: ((this.buffer.length / this.config.maxSize) * 100).toFixed(1)
+      utilizationPercent: (
+        (this.buffer.length / this.config.maxSize) *
+        100
+      ).toFixed(1),
     };
   }
 

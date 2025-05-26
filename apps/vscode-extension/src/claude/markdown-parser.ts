@@ -1,6 +1,6 @@
 import { Logger } from './logger';
 import * as vscode from 'vscode';
-import { CodeBlock } from './streaming-parser';
+import type { CodeBlock } from './streaming-parser';
 
 /**
  * Represents a file modification instruction
@@ -43,15 +43,19 @@ export class MarkdownParser {
   // Common patterns in Claude responses
   private readonly patterns = {
     codeBlock: /^```(\w+)?(?:\s+(.+))?\n([\s\S]*?)```$/gm,
-    fileInstruction: /(?:create|update|modify|delete|rename|move)\s+(?:file\s+)?[`']?([^\s`']+)[`']?/gi,
+    fileInstruction:
+      /(?:create|update|modify|delete|rename|move)\s+(?:file\s+)?[`']?([^\s`']+)[`']?/gi,
     filePath: /(?:^|\s)([A-Za-z0-9_\-./]+\.[A-Za-z0-9]+)(?:\s|$)/g,
     lineNumbers: /(?:lines?\s+)?(\d+)(?:\s*[-–]\s*(\d+))?/i,
     importStatement: /^(?:import|from|require)\s+.+$/gm,
-    functionDeclaration: /(?:function|const|let|var|class|interface|type|enum)\s+(\w+)/g
+    functionDeclaration:
+      /(?:function|const|let|var|class|interface|type|enum)\s+(\w+)/g,
   };
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Markdown Parser');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Markdown Parser',
+    );
     this.logger = new Logger(this.outputChannel);
   }
 
@@ -74,8 +78,8 @@ export class MarkdownParser {
         operation: metadata.operation,
         metadata: {
           lineNumbers: metadata.lineNumbers,
-          description: metadata.title
-        }
+          description: metadata.title,
+        },
       });
     }
 
@@ -99,8 +103,10 @@ export class MarkdownParser {
 
     // Deduplicate instructions
     const uniqueInstructions = this.deduplicateInstructions(instructions);
-    
-    this.logger.debug(`Extracted ${uniqueInstructions.length} file instructions`);
+
+    this.logger.debug(
+      `Extracted ${uniqueInstructions.length} file instructions`,
+    );
     return uniqueInstructions;
   }
 
@@ -110,7 +116,7 @@ export class MarkdownParser {
   parseMetadata(blockHeader: string): BlockMetadata {
     const metadata: BlockMetadata = {
       language: 'plaintext',
-      operation: 'unknown'
+      operation: 'unknown',
     };
 
     if (!blockHeader) {
@@ -118,7 +124,9 @@ export class MarkdownParser {
     }
 
     // Extract file path
-    const filePathMatch = blockHeader.match(/([A-Za-z0-9_\-./]+\.[A-Za-z0-9]+)/);
+    const filePathMatch = blockHeader.match(
+      /([A-Za-z0-9_\-./]+\.[A-Za-z0-9]+)/,
+    );
     if (filePathMatch) {
       metadata.filePath = filePathMatch[1];
     }
@@ -133,8 +141,10 @@ export class MarkdownParser {
     const lineMatch = blockHeader.match(this.patterns.lineNumbers);
     if (lineMatch) {
       metadata.lineNumbers = {
-        start: parseInt(lineMatch[1], 10),
-        end: lineMatch[2] ? parseInt(lineMatch[2], 10) : parseInt(lineMatch[1], 10)
+        start: Number.parseInt(lineMatch[1], 10),
+        end: lineMatch[2]
+          ? Number.parseInt(lineMatch[2], 10)
+          : Number.parseInt(lineMatch[1], 10),
       };
     }
 
@@ -202,7 +212,10 @@ export class MarkdownParser {
     // Detect operation type
     if (trimmedLine.includes('create') || trimmedLine.includes('new file')) {
       type = 'create';
-    } else if (trimmedLine.includes('delete') || trimmedLine.includes('remove')) {
+    } else if (
+      trimmedLine.includes('delete') ||
+      trimmedLine.includes('remove')
+    ) {
       type = 'delete';
     } else if (trimmedLine.includes('rename')) {
       type = 'rename';
@@ -229,17 +242,21 @@ export class MarkdownParser {
 
     // Extract line range
     const lineMatch = line.match(this.patterns.lineNumbers);
-    const lineRange = lineMatch ? {
-      start: parseInt(lineMatch[1], 10),
-      end: lineMatch[2] ? parseInt(lineMatch[2], 10) : parseInt(lineMatch[1], 10)
-    } : undefined;
+    const lineRange = lineMatch
+      ? {
+          start: Number.parseInt(lineMatch[1], 10),
+          end: lineMatch[2]
+            ? Number.parseInt(lineMatch[2], 10)
+            : Number.parseInt(lineMatch[1], 10),
+        }
+      : undefined;
 
     return {
       type,
       targetPath,
       sourcePath,
       description: line,
-      lineRange
+      lineRange,
     };
   }
 
@@ -265,10 +282,36 @@ export class MarkdownParser {
 
     // Check for common file extensions
     const validExtensions = [
-      'ts', 'tsx', 'js', 'jsx', 'json', 'md', 'css', 'scss', 'sass',
-      'html', 'xml', 'yaml', 'yml', 'txt', 'py', 'java', 'c', 'cpp',
-      'h', 'hpp', 'cs', 'go', 'rs', 'php', 'rb', 'swift', 'kt', 'vue',
-      'svelte', 'astro'
+      'ts',
+      'tsx',
+      'js',
+      'jsx',
+      'json',
+      'md',
+      'css',
+      'scss',
+      'sass',
+      'html',
+      'xml',
+      'yaml',
+      'yml',
+      'txt',
+      'py',
+      'java',
+      'c',
+      'cpp',
+      'h',
+      'hpp',
+      'cs',
+      'go',
+      'rs',
+      'php',
+      'rb',
+      'swift',
+      'kt',
+      'vue',
+      'svelte',
+      'astro',
     ];
 
     const extension = path.split('.').pop()?.toLowerCase();
@@ -278,7 +321,9 @@ export class MarkdownParser {
   /**
    * Deduplicate file instructions
    */
-  private deduplicateInstructions(instructions: FileInstruction[]): FileInstruction[] {
+  private deduplicateInstructions(
+    instructions: FileInstruction[],
+  ): FileInstruction[] {
     const seen = new Map<string, FileInstruction>();
 
     for (const instruction of instructions) {
@@ -294,7 +339,10 @@ export class MarkdownParser {
   /**
    * Analyze code content for patterns
    */
-  analyzeCode(code: string, language: string): {
+  analyzeCode(
+    code: string,
+    language: string,
+  ): {
     imports: string[];
     exports: string[];
     functions: string[];
@@ -304,26 +352,29 @@ export class MarkdownParser {
       imports: [] as string[],
       exports: [] as string[],
       functions: [] as string[],
-      classes: [] as string[]
+      classes: [] as string[],
     };
 
     // Language-specific parsing
     if (['typescript', 'javascript', 'tsx', 'jsx'].includes(language)) {
       // Extract imports
-      const importRegex = /import\s+(?:{[^}]+}|\*\s+as\s+\w+|\w+)\s+from\s+['"]([^'"]+)['"]/g;
+      const importRegex =
+        /import\s+(?:{[^}]+}|\*\s+as\s+\w+|\w+)\s+from\s+['"]([^'"]+)['"]/g;
       let match;
       while ((match = importRegex.exec(code)) !== null) {
         analysis.imports.push(match[1]);
       }
 
       // Extract exports
-      const exportRegex = /export\s+(?:default\s+)?(?:class|function|const|let|var|interface|type|enum)\s+(\w+)/g;
+      const exportRegex =
+        /export\s+(?:default\s+)?(?:class|function|const|let|var|interface|type|enum)\s+(\w+)/g;
       while ((match = exportRegex.exec(code)) !== null) {
         analysis.exports.push(match[1]);
       }
 
       // Extract functions
-      const functionRegex = /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*)?(?:\([^)]*\)|<[^>]*>)*\s*(?:=>|{)/g;
+      const functionRegex =
+        /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*)?(?:\([^)]*\)|<[^>]*>)*\s*(?:=>|{)/g;
       while ((match = functionRegex.exec(code)) !== null) {
         analysis.functions.push(match[1]);
       }

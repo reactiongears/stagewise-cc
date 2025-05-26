@@ -1,10 +1,5 @@
 import * as vscode from 'vscode';
-import { 
-  ConversationMessage, 
-  ConversationTurn, 
-  Session,
-  SessionConfig 
-} from './session-types';
+import type { ConversationTurn, Session } from './session-types';
 import { Logger } from './logger';
 
 /**
@@ -14,7 +9,7 @@ const TOKEN_ESTIMATION = {
   CHARS_PER_TOKEN: 4, // Rough estimate for English text
   OVERHEAD_PER_MESSAGE: 10, // Additional tokens for message metadata
   MAX_CONTEXT_TOKENS: 100000, // Claude's context limit
-  SAFETY_MARGIN: 0.9 // Use only 90% of max to be safe
+  SAFETY_MARGIN: 0.9, // Use only 90% of max to be safe
 };
 
 /**
@@ -63,16 +58,20 @@ export class ConversationHistory {
   private importanceCache: Map<string, MessageImportance> = new Map();
 
   constructor(config?: Partial<MemoryConfig>) {
-    const outputChannel = vscode.window.createOutputChannel('Claude Conversation History');
+    const outputChannel = vscode.window.createOutputChannel(
+      'Claude Conversation History',
+    );
     this.logger = new Logger(outputChannel);
-    
+
     this.config = {
       maxTurns: config?.maxTurns ?? 100,
-      maxTokens: config?.maxTokens ?? TOKEN_ESTIMATION.MAX_CONTEXT_TOKENS * TOKEN_ESTIMATION.SAFETY_MARGIN,
+      maxTokens:
+        config?.maxTokens ??
+        TOKEN_ESTIMATION.MAX_CONTEXT_TOKENS * TOKEN_ESTIMATION.SAFETY_MARGIN,
       compressionThreshold: config?.compressionThreshold ?? 0.7,
       pruningStrategy: config?.pruningStrategy ?? 'smart',
       keepSystemMessages: config?.keepSystemMessages ?? true,
-      keepErrorMessages: config?.keepErrorMessages ?? true
+      keepErrorMessages: config?.keepErrorMessages ?? true,
     };
   }
 
@@ -82,19 +81,24 @@ export class ConversationHistory {
   async addTurn(sessionId: string, turn: ConversationTurn): Promise<void> {
     let turns = this.conversationCache.get(sessionId) || [];
     turns.push(turn);
-    
+
     // Calculate token usage
     const turnTokens = this.estimateTokens(turn);
     this.updateTokenCache(sessionId, turnTokens);
-    
+
     // Check if we need to manage memory
     const totalTokens = this.getTotalTokens(sessionId);
-    if (totalTokens > this.config.maxTokens || turns.length > this.config.maxTurns) {
+    if (
+      totalTokens > this.config.maxTokens ||
+      turns.length > this.config.maxTurns
+    ) {
       turns = await this.manageMemory(sessionId, turns);
     }
-    
+
     this.conversationCache.set(sessionId, turns);
-    this.logger.debug(`Added turn to session ${sessionId}, total turns: ${turns.length}`);
+    this.logger.debug(
+      `Added turn to session ${sessionId}, total turns: ${turns.length}`,
+    );
   }
 
   /**
@@ -102,12 +106,12 @@ export class ConversationHistory {
    */
   getHistory(sessionId: string, maxTurns?: number): ConversationTurn[] {
     const turns = this.conversationCache.get(sessionId) || [];
-    
+
     if (maxTurns && maxTurns < turns.length) {
       // Return most recent turns
       return turns.slice(-maxTurns);
     }
-    
+
     return [...turns];
   }
 
@@ -117,24 +121,24 @@ export class ConversationHistory {
   getFormattedContext(sessionId: string, maxTokens?: number): string {
     const turns = this.getHistory(sessionId);
     const targetTokens = maxTokens || this.config.maxTokens;
-    
+
     let context = '';
     let currentTokens = 0;
-    
+
     // Build context from most recent messages backwards
     for (let i = turns.length - 1; i >= 0; i--) {
       const turn = turns[i];
       const turnText = this.formatTurn(turn);
       const turnTokens = this.estimateStringTokens(turnText);
-      
+
       if (currentTokens + turnTokens > targetTokens) {
         break;
       }
-      
+
       context = turnText + '\n\n' + context;
       currentTokens += turnTokens;
     }
-    
+
     return context.trim();
   }
 
@@ -143,20 +147,20 @@ export class ConversationHistory {
    */
   async compressHistory(sessionId: string): Promise<void> {
     const turns = this.conversationCache.get(sessionId) || [];
-    
+
     if (turns.length === 0) return;
-    
+
     this.logger.info(`Compressing history for session ${sessionId}`);
-    
+
     const compressedTurns = await this.compressTurns(turns);
     const compressionRatio = compressedTurns.length / turns.length;
-    
+
     if (compressionRatio < this.config.compressionThreshold) {
       this.conversationCache.set(sessionId, compressedTurns);
       this.rebuildTokenCache(sessionId, compressedTurns);
-      
+
       this.logger.info(
-        `Compressed session ${sessionId} from ${turns.length} to ${compressedTurns.length} turns`
+        `Compressed session ${sessionId} from ${turns.length} to ${compressedTurns.length} turns`,
       );
     }
   }
@@ -168,7 +172,7 @@ export class ConversationHistory {
     this.conversationCache.delete(sessionId);
     this.tokenCache.delete(sessionId);
     this.importanceCache.delete(sessionId);
-    
+
     this.logger.debug(`Cleared history for session ${sessionId}`);
   }
 
@@ -180,13 +184,13 @@ export class ConversationHistory {
     const totalMessages = turns.reduce((sum, turn) => {
       return sum + 1 + (turn.assistantMessage ? 1 : 0);
     }, 0);
-    
+
     return {
       totalTurns: turns.length,
       totalMessages,
       estimatedTokens: this.getTotalTokens(sessionId),
       compressionRatio: 1.0, // TODO: Track actual compression
-      pruningCount: 0 // TODO: Track pruning
+      pruningCount: 0, // TODO: Track pruning
     };
   }
 
@@ -196,18 +200,18 @@ export class ConversationHistory {
   async archiveOldConversations(sessions: Session[]): Promise<void> {
     const now = Date.now();
     const archiveThreshold = 7 * 24 * 60 * 60 * 1000; // 7 days
-    
+
     for (const session of sessions) {
       const age = now - session.lastActiveAt.getTime();
-      
+
       if (age > archiveThreshold && this.conversationCache.has(session.id)) {
         // Compress before archiving
         await this.compressHistory(session.id);
-        
+
         // Remove from active cache
         this.conversationCache.delete(session.id);
         this.tokenCache.delete(session.id);
-        
+
         this.logger.info(`Archived conversation for session ${session.id}`);
       }
     }
@@ -216,19 +220,19 @@ export class ConversationHistory {
   // Private helper methods
 
   private async manageMemory(
-    sessionId: string, 
-    turns: ConversationTurn[]
+    sessionId: string,
+    turns: ConversationTurn[],
   ): Promise<ConversationTurn[]> {
     switch (this.config.pruningStrategy) {
       case 'fifo':
         return this.pruneFIFO(turns);
-      
+
       case 'importance':
         return this.pruneByImportance(turns);
-      
+
       case 'smart':
         return this.pruneSmartly(sessionId, turns);
-      
+
       default:
         return this.pruneFIFO(turns);
     }
@@ -236,22 +240,22 @@ export class ConversationHistory {
 
   private pruneFIFO(turns: ConversationTurn[]): ConversationTurn[] {
     const maxTurns = Math.floor(this.config.maxTurns * 0.8); // Keep 80%
-    
+
     if (turns.length <= maxTurns) {
       return turns;
     }
-    
+
     // Keep most recent turns
     return turns.slice(-maxTurns);
   }
 
   private pruneByImportance(turns: ConversationTurn[]): ConversationTurn[] {
     // Calculate importance for each turn
-    const scoredTurns = turns.map(turn => ({
+    const scoredTurns = turns.map((turn) => ({
       turn,
-      importance: this.calculateImportance(turn)
+      importance: this.calculateImportance(turn),
     }));
-    
+
     // Sort by importance (descending) and recency
     scoredTurns.sort((a, b) => {
       if (Math.abs(a.importance.score - b.importance.score) < 0.1) {
@@ -260,67 +264,77 @@ export class ConversationHistory {
       }
       return b.importance.score - a.importance.score;
     });
-    
+
     // Keep most important turns up to token limit
     let totalTokens = 0;
     const keptTurns: ConversationTurn[] = [];
-    
+
     for (const { turn } of scoredTurns) {
       const turnTokens = this.estimateTokens(turn);
-      
+
       if (totalTokens + turnTokens > this.config.maxTokens * 0.8) {
         break;
       }
-      
+
       keptTurns.push(turn);
       totalTokens += turnTokens;
     }
-    
+
     // Sort back by time
     keptTurns.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-    
+
     return keptTurns;
   }
 
-  private pruneSmartly(sessionId: string, turns: ConversationTurn[]): ConversationTurn[] {
+  private pruneSmartly(
+    sessionId: string,
+    turns: ConversationTurn[],
+  ): ConversationTurn[] {
     // Smart pruning combines multiple strategies
     const recentCount = Math.min(10, Math.floor(turns.length * 0.3));
     const recentTurns = turns.slice(-recentCount);
     const olderTurns = turns.slice(0, -recentCount);
-    
+
     // Always keep recent turns
-    let keptTurns = [...recentTurns];
-    let currentTokens = recentTurns.reduce((sum, turn) => sum + this.estimateTokens(turn), 0);
-    
+    const keptTurns = [...recentTurns];
+    let currentTokens = recentTurns.reduce(
+      (sum, turn) => sum + this.estimateTokens(turn),
+      0,
+    );
+
     // Intelligently select from older turns
-    const importantOlderTurns = olderTurns.filter(turn => {
+    const importantOlderTurns = olderTurns.filter((turn) => {
       const importance = this.calculateImportance(turn);
-      
+
       // Keep if it has important characteristics
-      return importance.hasError || 
-             importance.hasOperations || 
-             importance.score > 0.7;
+      return (
+        importance.hasError ||
+        importance.hasOperations ||
+        importance.score > 0.7
+      );
     });
-    
+
     // Add important older turns if we have space
     for (const turn of importantOlderTurns) {
       const turnTokens = this.estimateTokens(turn);
-      
+
       if (currentTokens + turnTokens > this.config.maxTokens * 0.8) {
         break;
       }
-      
+
       keptTurns.unshift(turn);
       currentTokens += turnTokens;
     }
-    
+
     return keptTurns;
   }
 
-  private async compressTurns(turns: ConversationTurn[]): Promise<ConversationTurn[]> {
+  private async compressTurns(
+    turns: ConversationTurn[],
+  ): Promise<ConversationTurn[]> {
     const compressed: ConversationTurn[] = [];
     let consecutiveSimilar: ConversationTurn[] = [];
-    
+
     for (const turn of turns) {
       if (this.shouldCompress(turn)) {
         consecutiveSimilar.push(turn);
@@ -334,13 +348,13 @@ export class ConversationHistory {
         } else if (consecutiveSimilar.length === 1) {
           compressed.push(consecutiveSimilar[0]);
         }
-        
+
         // Reset and add current turn
         consecutiveSimilar = [];
         compressed.push(turn);
       }
     }
-    
+
     // Handle remaining turns
     if (consecutiveSimilar.length > 1) {
       const summary = await this.summarizeTurns(consecutiveSimilar);
@@ -350,33 +364,35 @@ export class ConversationHistory {
     } else if (consecutiveSimilar.length === 1) {
       compressed.push(consecutiveSimilar[0]);
     }
-    
+
     return compressed;
   }
 
   private shouldCompress(turn: ConversationTurn): boolean {
     // Don't compress turns with errors or operations
     if (turn.status === 'error') return false;
-    
+
     if (turn.assistantMessage?.metadata?.operations?.length) {
       return false;
     }
-    
+
     // Compress simple Q&A turns
     return true;
   }
 
-  private async summarizeTurns(turns: ConversationTurn[]): Promise<ConversationTurn | null> {
+  private async summarizeTurns(
+    turns: ConversationTurn[],
+  ): Promise<ConversationTurn | null> {
     if (turns.length === 0) return null;
-    
+
     // Create a summary turn
     const firstTurn = turns[0];
     const lastTurn = turns[turns.length - 1];
-    
-    const summaryContent = `[Summarized ${turns.length} turns: ${
-      turns.map(t => t.userMessage.content.substring(0, 50)).join('; ')
-    }]`;
-    
+
+    const summaryContent = `[Summarized ${turns.length} turns: ${turns
+      .map((t) => t.userMessage.content.substring(0, 50))
+      .join('; ')}]`;
+
     return {
       id: `summary_${firstTurn.id}_${lastTurn.id}`,
       userMessage: {
@@ -385,8 +401,8 @@ export class ConversationHistory {
         content: summaryContent,
         timestamp: firstTurn.startTime,
         metadata: {
-          tokenCount: this.estimateStringTokens(summaryContent)
-        }
+          tokenCount: this.estimateStringTokens(summaryContent),
+        },
       },
       assistantMessage: {
         id: `summary_assistant_${Date.now()}`,
@@ -394,56 +410,61 @@ export class ConversationHistory {
         content: '[Summarized responses]',
         timestamp: lastTurn.endTime || lastTurn.startTime,
         metadata: {
-          tokenCount: 20
-        }
+          tokenCount: 20,
+        },
       },
       startTime: firstTurn.startTime,
       endTime: lastTurn.endTime,
-      status: 'complete'
+      status: 'complete',
     };
   }
 
   private calculateImportance(turn: ConversationTurn): MessageImportance {
     let score = 0.5; // Base score
-    
-    const hasCode = /```[\s\S]*?```/.test(turn.userMessage.content) ||
-                   (turn.assistantMessage ? /```[\s\S]*?```/.test(turn.assistantMessage.content) : false);
-    
-    const hasError = turn.status === 'error' || 
-                    turn.assistantMessage?.metadata?.error !== undefined;
-    
-    const hasOperations = (turn.assistantMessage?.metadata?.operations?.length || 0) > 0;
-    
+
+    const hasCode =
+      /```[\s\S]*?```/.test(turn.userMessage.content) ||
+      (turn.assistantMessage
+        ? /```[\s\S]*?```/.test(turn.assistantMessage.content)
+        : false);
+
+    const hasError =
+      turn.status === 'error' ||
+      turn.assistantMessage?.metadata?.error !== undefined;
+
+    const hasOperations =
+      (turn.assistantMessage?.metadata?.operations?.length || 0) > 0;
+
     const isRecent = Date.now() - turn.startTime.getTime() < 3600000; // Last hour
-    
+
     // Calculate score
     if (hasCode) score += 0.2;
     if (hasError) score += 0.3;
     if (hasOperations) score += 0.3;
     if (isRecent) score += 0.2;
-    
+
     // Check if referenced by other messages
     const isReferenced = false; // TODO: Implement reference detection
-    
+
     return {
       score: Math.min(1.0, score),
       hasCode,
       hasError,
       hasOperations,
       isRecent,
-      isReferenced
+      isReferenced,
     };
   }
 
   private estimateTokens(turn: ConversationTurn): number {
     let tokens = TOKEN_ESTIMATION.OVERHEAD_PER_MESSAGE * 2; // User + assistant
-    
+
     tokens += this.estimateStringTokens(turn.userMessage.content);
-    
+
     if (turn.assistantMessage) {
       tokens += this.estimateStringTokens(turn.assistantMessage.content);
     }
-    
+
     return Math.ceil(tokens);
   }
 
@@ -453,21 +474,21 @@ export class ConversationHistory {
     if (cached !== undefined) {
       return cached;
     }
-    
+
     // Simple estimation: characters / 4
     const estimate = Math.ceil(text.length / TOKEN_ESTIMATION.CHARS_PER_TOKEN);
-    
+
     // Cache for small strings
     if (text.length < 1000) {
       this.tokenCache.set(text, estimate);
     }
-    
+
     return estimate;
   }
 
   private getTotalTokens(sessionId: string): number {
     const turns = this.conversationCache.get(sessionId) || [];
-    
+
     return turns.reduce((sum, turn) => sum + this.estimateTokens(turn), 0);
   }
 
@@ -476,18 +497,24 @@ export class ConversationHistory {
     this.tokenCache.set(sessionId, current + additionalTokens);
   }
 
-  private rebuildTokenCache(sessionId: string, turns: ConversationTurn[]): void {
-    const total = turns.reduce((sum, turn) => sum + this.estimateTokens(turn), 0);
+  private rebuildTokenCache(
+    sessionId: string,
+    turns: ConversationTurn[],
+  ): void {
+    const total = turns.reduce(
+      (sum, turn) => sum + this.estimateTokens(turn),
+      0,
+    );
     this.tokenCache.set(sessionId, total);
   }
 
   private formatTurn(turn: ConversationTurn): string {
     let formatted = `User: ${turn.userMessage.content}`;
-    
+
     if (turn.assistantMessage) {
       formatted += `\n\nAssistant: ${turn.assistantMessage.content}`;
     }
-    
+
     return formatted;
   }
 
@@ -497,22 +524,22 @@ export class ConversationHistory {
   exportConversation(sessionId: string): string {
     const turns = this.getHistory(sessionId);
     const stats = this.getStats(sessionId);
-    
+
     let output = `# Conversation Export\n`;
     output += `Session: ${sessionId}\n`;
     output += `Turns: ${stats.totalTurns}\n`;
     output += `Estimated Tokens: ${stats.estimatedTokens}\n\n`;
-    
+
     for (const turn of turns) {
       output += `## Turn ${turn.id}\n`;
       output += `Time: ${turn.startTime.toISOString()}\n\n`;
       output += `### User\n${turn.userMessage.content}\n\n`;
-      
+
       if (turn.assistantMessage) {
         output += `### Assistant\n${turn.assistantMessage.content}\n\n`;
       }
     }
-    
+
     return output;
   }
 
@@ -522,8 +549,10 @@ export class ConversationHistory {
   loadFromSession(session: Session): void {
     this.conversationCache.set(session.id, session.turns);
     this.rebuildTokenCache(session.id, session.turns);
-    
-    this.logger.debug(`Loaded ${session.turns.length} turns for session ${session.id}`);
+
+    this.logger.debug(
+      `Loaded ${session.turns.length} turns for session ${session.id}`,
+    );
   }
 
   /**

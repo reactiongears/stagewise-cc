@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { FileOperation, OperationType, RiskLevel } from './code-extractor';
-import { DiffPreview, DiffSummary } from './diff-types';
+import { type FileOperation, OperationType, RiskLevel } from './code-extractor';
+import type { DiffPreview, DiffSummary } from './diff-types';
 import { DiffPreviewService } from './diff-preview';
 import { Logger } from './logger';
 
@@ -12,7 +12,7 @@ export enum UserDecision {
   ACCEPT_SELECTED = 'accept-selected',
   REJECT = 'reject',
   CANCEL = 'cancel',
-  VIEW_DIFF = 'view-diff'
+  VIEW_DIFF = 'view-diff',
 }
 
 /**
@@ -57,7 +57,9 @@ export class UserConfirmationService {
   private rememberedChoices: Map<string, UserDecision> = new Map();
 
   constructor(config: ConfirmationConfig = {}) {
-    this.outputChannel = vscode.window.createOutputChannel('Claude User Confirmation');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude User Confirmation',
+    );
     this.logger = new Logger(this.outputChannel);
     this.diffPreview = new DiffPreviewService();
     this.config = {
@@ -65,7 +67,7 @@ export class UserConfirmationService {
       autoAcceptLowRisk: config.autoAcceptLowRisk ?? false,
       showDetailedStats: config.showDetailedStats ?? true,
       confirmDestructive: config.confirmDestructive ?? true,
-      enableQuickActions: config.enableQuickActions ?? true
+      enableQuickActions: config.enableQuickActions ?? true,
     };
   }
 
@@ -74,7 +76,7 @@ export class UserConfirmationService {
    */
   async requestConfirmation(
     operations: FileOperation[],
-    preview?: DiffPreview
+    preview?: DiffPreview,
   ): Promise<ConfirmationResult> {
     // Check for auto-accept conditions
     const autoDecision = this.checkAutoAccept(operations, preview);
@@ -101,7 +103,7 @@ export class UserConfirmationService {
    */
   private checkAutoAccept(
     operations: FileOperation[],
-    preview?: DiffPreview
+    preview?: DiffPreview,
   ): ConfirmationResult | null {
     // Check remembered choices
     const operationKey = this.generateOperationKey(operations);
@@ -109,22 +111,21 @@ export class UserConfirmationService {
     if (remembered) {
       return {
         decision: remembered,
-        selectedOperations: operations.map(op => op.id)
+        selectedOperations: operations.map((op) => op.id),
       };
     }
 
     // Check auto-accept for low risk
     if (this.config.autoAcceptLowRisk && preview) {
-      const allLowRisk = operations.every(op => 
-        op.risk === RiskLevel.LOW || 
-        op.risk === undefined
+      const allLowRisk = operations.every(
+        (op) => op.risk === RiskLevel.LOW || op.risk === undefined,
       );
-      
+
       if (allLowRisk && preview.summary.riskLevel === RiskLevel.LOW) {
         this.logger.info('Auto-accepting low-risk operations');
         return {
           decision: UserDecision.ACCEPT_ALL,
-          selectedOperations: operations.map(op => op.id)
+          selectedOperations: operations.map((op) => op.id),
         };
       }
     }
@@ -137,7 +138,7 @@ export class UserConfirmationService {
    */
   private async showConfirmationDialog(
     operations: FileOperation[],
-    preview: DiffPreview
+    preview: DiffPreview,
   ): Promise<ConfirmationResult> {
     // Create quick pick items
     const items = this.createQuickPickItems(operations, preview);
@@ -147,7 +148,7 @@ export class UserConfirmationService {
       canPickMany: true,
       placeHolder: 'Review and select operations to apply',
       ignoreFocusOut: true,
-      title: `Claude Code Changes (${operations.length} operations)`
+      title: `Claude Code Changes (${operations.length} operations)`,
     });
 
     if (!selection || selection.length === 0) {
@@ -155,21 +156,24 @@ export class UserConfirmationService {
     }
 
     // Handle special actions
-    const actionItem = selection.find(item => (item as any).isAction);
+    const actionItem = selection.find((item) => (item as any).isAction);
     if (actionItem) {
-      return await this.handleAction((actionItem as any).action!, operations, preview);
+      return await this.handleAction(
+        (actionItem as any).action!,
+        operations,
+        preview,
+      );
     }
 
     // Get selected operations
     const selectedOps = selection
-      .filter(item => (item as any).operationId)
-      .map(item => (item as any).operationId as string);
+      .filter((item) => (item as any).operationId)
+      .map((item) => (item as any).operationId as string);
 
     // Show final confirmation for destructive operations
     if (this.config.confirmDestructive) {
-      const destructive = operations.filter(op => 
-        op.type === OperationType.DELETE && 
-        selectedOps.includes(op.id)
+      const destructive = operations.filter(
+        (op) => op.type === OperationType.DELETE && selectedOps.includes(op.id),
       );
 
       if (destructive.length > 0) {
@@ -181,10 +185,11 @@ export class UserConfirmationService {
     }
 
     return {
-      decision: selectedOps.length === operations.length 
-        ? UserDecision.ACCEPT_ALL 
-        : UserDecision.ACCEPT_SELECTED,
-      selectedOperations: selectedOps
+      decision:
+        selectedOps.length === operations.length
+          ? UserDecision.ACCEPT_ALL
+          : UserDecision.ACCEPT_SELECTED,
+      selectedOperations: selectedOps,
     };
   }
 
@@ -193,7 +198,7 @@ export class UserConfirmationService {
    */
   private createQuickPickItems(
     operations: FileOperation[],
-    preview: DiffPreview
+    preview: DiffPreview,
   ): vscode.QuickPickItem[] {
     const items: vscode.QuickPickItem[] = [];
 
@@ -202,28 +207,32 @@ export class UserConfirmationService {
       label: '$(info) Summary',
       description: this.formatSummary(preview.summary),
       detail: preview.metadata.warnings?.join(' • '),
-      alwaysShow: true
+      alwaysShow: true,
     });
 
     // Add separator
     items.push({
       label: '',
-      kind: vscode.QuickPickItemKind.Separator
+      kind: vscode.QuickPickItemKind.Separator,
     });
 
     // Add operations
     for (const operation of operations) {
-      const fileDiff = preview.fileOperations.find(fd => fd.operation.id === operation.id);
+      const fileDiff = preview.fileOperations.find(
+        (fd) => fd.operation.id === operation.id,
+      );
       const icon = this.getOperationIcon(operation.type);
-      const stats = fileDiff ? `+${fileDiff.stats.additions} -${fileDiff.stats.deletions}` : '';
-      
+      const stats = fileDiff
+        ? `+${fileDiff.stats.additions} -${fileDiff.stats.deletions}`
+        : '';
+
       items.push({
         label: `${icon} ${vscode.workspace.asRelativePath(operation.targetPath)}`,
         description: `${operation.type} ${stats}`,
         detail: operation.metadata?.description,
         picked: true,
         // Store operation ID in custom property
-        operationId: operation.id
+        operationId: operation.id,
       } as any);
     }
 
@@ -231,7 +240,7 @@ export class UserConfirmationService {
     if (this.config.enableQuickActions) {
       items.push({
         label: '',
-        kind: vscode.QuickPickItemKind.Separator
+        kind: vscode.QuickPickItemKind.Separator,
       });
 
       items.push({
@@ -239,7 +248,7 @@ export class UserConfirmationService {
         description: 'Show detailed diff preview',
         alwaysShow: true,
         isAction: true,
-        action: 'view-diff'
+        action: 'view-diff',
       } as any);
 
       items.push({
@@ -247,7 +256,7 @@ export class UserConfirmationService {
         description: 'Apply all operations',
         alwaysShow: true,
         isAction: true,
-        action: 'accept-all'
+        action: 'accept-all',
       } as any);
 
       items.push({
@@ -255,7 +264,7 @@ export class UserConfirmationService {
         description: 'Cancel all operations',
         alwaysShow: true,
         isAction: true,
-        action: 'reject'
+        action: 'reject',
       } as any);
     }
 
@@ -268,23 +277,23 @@ export class UserConfirmationService {
   private async handleAction(
     action: string,
     operations: FileOperation[],
-    preview: DiffPreview
+    preview: DiffPreview,
   ): Promise<ConfirmationResult> {
     switch (action) {
       case 'view-diff':
         await this.showDiffPreview(preview);
         // Show dialog again after viewing diff
         return this.showConfirmationDialog(operations, preview);
-      
+
       case 'accept-all':
         return {
           decision: UserDecision.ACCEPT_ALL,
-          selectedOperations: operations.map(op => op.id)
+          selectedOperations: operations.map((op) => op.id),
         };
-      
+
       case 'reject':
         return { decision: UserDecision.REJECT };
-      
+
       default:
         return { decision: UserDecision.CANCEL };
     }
@@ -295,7 +304,7 @@ export class UserConfirmationService {
    */
   private async showDiffPreview(preview: DiffPreview): Promise<void> {
     const result = await this.diffPreview.showPreview(preview);
-    
+
     // Handle result if needed
     if (result.action === 'apply' && result.selectedOperations) {
       // This is handled by the caller
@@ -306,10 +315,10 @@ export class UserConfirmationService {
    * Confirm destructive operations
    */
   private async confirmDestructiveOperations(
-    operations: FileOperation[]
+    operations: FileOperation[],
   ): Promise<boolean> {
     const fileList = operations
-      .map(op => `  • ${vscode.workspace.asRelativePath(op.targetPath)}`)
+      .map((op) => `  • ${vscode.workspace.asRelativePath(op.targetPath)}`)
       .join('\n');
 
     const message = `You are about to delete ${operations.length} file(s):\n\n${fileList}\n\nThis action cannot be undone. Continue?`;
@@ -318,7 +327,7 @@ export class UserConfirmationService {
       message,
       { modal: true },
       'Delete Files',
-      'Cancel'
+      'Cancel',
     );
 
     return choice === 'Delete Files';
@@ -330,23 +339,25 @@ export class UserConfirmationService {
   async showOperationResult(
     success: boolean,
     operationCount: number,
-    details?: string
+    details?: string,
   ): Promise<void> {
     const message = success
       ? `✅ Successfully applied ${operationCount} operations`
       : `❌ Failed to apply operations`;
 
     const actions = success ? ['View Output'] : ['View Output', 'Report Issue'];
-    
+
     const choice = await vscode.window.showInformationMessage(
       details ? `${message}\n${details}` : message,
-      ...actions
+      ...actions,
     );
 
     if (choice === 'View Output') {
       this.logger.show();
     } else if (choice === 'Report Issue') {
-      vscode.env.openExternal(vscode.Uri.parse('https://github.com/stagewise/claude-vscode/issues'));
+      vscode.env.openExternal(
+        vscode.Uri.parse('https://github.com/stagewise/claude-vscode/issues'),
+      );
     }
   }
 
@@ -355,7 +366,7 @@ export class UserConfirmationService {
    */
   private formatSummary(summary: DiffSummary): string {
     const parts = [];
-    
+
     if (summary.filesCreated > 0) {
       parts.push(`${summary.filesCreated} created`);
     }
@@ -398,13 +409,13 @@ export class UserConfirmationService {
    */
   private generateOperationKey(operations: FileOperation[]): string {
     const sorted = operations
-      .map(op => `${op.type}:${op.targetPath}`)
+      .map((op) => `${op.type}:${op.targetPath}`)
       .sort()
       .join('|');
-    
-    const hash = sorted.split('').reduce((acc, char) => 
-      ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0
-    );
+
+    const hash = sorted
+      .split('')
+      .reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0);
     return `op_${Math.abs(hash)}`;
   }
 
@@ -414,7 +425,7 @@ export class UserConfirmationService {
   rememberChoice(operations: FileOperation[], decision: UserDecision): void {
     const key = this.generateOperationKey(operations);
     this.rememberedChoices.set(key, decision);
-    
+
     // Limit cache size
     if (this.rememberedChoices.size > 100) {
       const firstKey = this.rememberedChoices.keys().next().value;

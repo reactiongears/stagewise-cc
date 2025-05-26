@@ -10,32 +10,32 @@ export interface WorkspaceInfo {
    * Absolute path to workspace root directory
    */
   rootPath: string;
-  
+
   /**
    * Human-readable workspace name
    */
   name: string;
-  
+
   /**
    * All workspace folders (for multi-root workspaces)
    */
   folders: WorkspaceFolder[];
-  
+
   /**
    * Currently active file being edited
    */
   activeFile?: FileInfo;
-  
+
   /**
    * All currently open files in the editor
    */
   openFiles: FileInfo[];
-  
+
   /**
    * Recently modified files (optional)
    */
   recentFiles?: FileInfo[];
-  
+
   /**
    * High-level project structure information
    */
@@ -50,12 +50,12 @@ export interface WorkspaceFolder {
    * Folder name
    */
   name: string;
-  
+
   /**
    * Absolute path to folder
    */
   path: string;
-  
+
   /**
    * Folder index in multi-root workspace
    */
@@ -70,47 +70,47 @@ export interface FileInfo {
    * File path relative to workspace root
    */
   path: string;
-  
+
   /**
    * Absolute file path
    */
   absolutePath?: string;
-  
+
   /**
    * Programming language or file type
    */
   language: string;
-  
+
   /**
    * Whether the file has unsaved changes
    */
   isModified: boolean;
-  
+
   /**
    * Full file content (if included)
    */
   content?: string;
-  
+
   /**
    * Excerpt or snippet if full content is too large
    */
   excerpt?: string;
-  
+
   /**
    * Total number of lines in the file
    */
   lineCount: number;
-  
+
   /**
    * File size in bytes
    */
   size?: number;
-  
+
   /**
    * Last modification timestamp
    */
   lastModified: Date;
-  
+
   /**
    * Current cursor position or selection
    */
@@ -125,12 +125,12 @@ export interface FileSelection {
    * Start position
    */
   start: Position;
-  
+
   /**
    * End position (same as start for cursor)
    */
   end: Position;
-  
+
   /**
    * Selected text content
    */
@@ -145,7 +145,7 @@ export interface Position {
    * Zero-based line number
    */
   line: number;
-  
+
   /**
    * Zero-based character position
    */
@@ -160,27 +160,27 @@ export interface ProjectStructure {
    * Package.json information for Node.js projects
    */
   packageJson?: PackageInfo;
-  
+
   /**
    * Git repository information
    */
   gitInfo?: GitInfo;
-  
+
   /**
    * Detected frameworks and libraries
    */
   frameworks: string[];
-  
+
   /**
    * Key project dependencies
    */
   dependencies?: string[];
-  
+
   /**
    * Project type (e.g., 'node', 'python', 'java')
    */
   projectType?: string;
-  
+
   /**
    * Build system (e.g., 'npm', 'gradle', 'maven')
    */
@@ -195,32 +195,32 @@ export interface PackageInfo {
    * Package name
    */
   name: string;
-  
+
   /**
    * Package version
    */
   version: string;
-  
+
   /**
    * Package description
    */
   description?: string;
-  
+
   /**
    * Main entry point
    */
   main?: string;
-  
+
   /**
    * Available scripts
    */
   scripts?: Record<string, string>;
-  
+
   /**
    * Production dependencies (names only)
    */
   dependencies?: string[];
-  
+
   /**
    * Development dependencies (names only)
    */
@@ -235,32 +235,32 @@ export interface GitInfo {
    * Current branch name
    */
   branch: string;
-  
+
   /**
    * Remote repository URL
    */
   remoteUrl?: string;
-  
+
   /**
    * Whether there are uncommitted changes
    */
   hasUncommittedChanges: boolean;
-  
+
   /**
    * Number of commits ahead of remote
    */
   ahead?: number;
-  
+
   /**
    * Number of commits behind remote
    */
   behind?: number;
-  
+
   /**
    * Last commit hash
    */
   lastCommitHash?: string;
-  
+
   /**
    * Last commit message
    */
@@ -299,13 +299,13 @@ export function validateFileInfo(file: any): file is FileInfo {
 /**
  * Creates a minimal FileInfo object
  */
-export function createFileInfo(path: string, language: string = 'plaintext'): FileInfo {
+export function createFileInfo(path: string, language = 'plaintext'): FileInfo {
   return {
     path,
     language,
     isModified: false,
     lineCount: 0,
-    lastModified: new Date()
+    lastModified: new Date(),
   };
 }
 
@@ -322,10 +322,10 @@ export function isConfigurationFile(path: string): boolean {
     /\.env/,
     /webpack\.config/,
     /vite\.config/,
-    /rollup\.config/
+    /rollup\.config/,
   ];
-  
-  return configPatterns.some(pattern => pattern.test(path));
+
+  return configPatterns.some((pattern) => pattern.test(path));
 }
 
 /**
@@ -333,31 +333,31 @@ export function isConfigurationFile(path: string): boolean {
  */
 export function estimateFileImportance(file: FileInfo): number {
   let score = 0;
-  
+
   // Active file is most important
   if (file.path.includes('active')) {
     score += 100;
   }
-  
+
   // Modified files are important
   if (file.isModified) {
     score += 50;
   }
-  
+
   // Configuration files are important
   if (isConfigurationFile(file.path)) {
     score += 30;
   }
-  
+
   // Entry points are important
   if (file.path.match(/\/(index|main|app)\.(ts|js|tsx|jsx)$/)) {
     score += 25;
   }
-  
+
   // Test files are less important for context
   if (file.path.includes('.test.') || file.path.includes('.spec.')) {
     score -= 20;
   }
-  
+
   return score;
 }

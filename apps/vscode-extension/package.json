@@ -10,15 +10,8 @@
     "vscode": "^1.85.0"
   },
   "license": "AGPL-3.0-only",
-  "categories": [
-    "AI",
-    "Debuggers",
-    "Machine Learning",
-    "Other"
-  ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
+  "categories": ["AI", "Debuggers", "Machine Learning", "Other"],
+  "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -66,6 +59,11 @@
         "command": "stagewise-cc.claude.clearHistory",
         "title": "Clear Claude History",
         "category": "Claude"
+      },
+      {
+        "command": "stagewise-cc.showSetupGuide",
+        "title": "Show Setup Guide",
+        "category": "stagewise-cc"
       }
     ],
     "configuration": {
@@ -166,13 +164,7 @@
         "stagewise-cc.claude.outputChannelLevel": {
           "type": "string",
           "default": "info",
-          "enum": [
-            "error",
-            "warning",
-            "info",
-            "debug",
-            "trace"
-          ],
+          "enum": ["error", "warning", "info", "debug", "trace"],
           "description": "Logging level for the output channel"
         },
         "stagewise-cc.claude.timeout": {
@@ -227,10 +219,7 @@
           "description": "Enable experimental beta features"
         },
         "stagewise-cc.claude.experimental.customEndpoint": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": ["string", "null"],
           "default": null,
           "description": "Custom API endpoint (advanced users only)"
         },
@@ -238,6 +227,95 @@
           "type": "boolean",
           "default": false,
           "description": "Enable debug mode with verbose logging"
+        },
+        "stagewise.server.port": {
+          "type": "number",
+          "default": 5746,
+          "minimum": 1024,
+          "maximum": 65535,
+          "description": "Port for the Stagewise server"
+        },
+        "stagewise.server.host": {
+          "type": "string",
+          "default": "localhost",
+          "description": "Host for the Stagewise server"
+        },
+        "stagewise.server.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start the server on extension activation"
+        },
+        "stagewise.mcp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Model Context Protocol (MCP) server"
+        },
+        "stagewise.mcp.maxConcurrentTools": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of concurrent MCP tool executions"
+        },
+        "stagewise.mcp.timeout": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 300000,
+          "description": "MCP tool execution timeout in milliseconds"
+        },
+        "stagewise.performance.cacheEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable response caching for performance"
+        },
+        "stagewise.performance.cacheTTL": {
+          "type": "number",
+          "default": 300000,
+          "minimum": 60000,
+          "maximum": 3600000,
+          "description": "Cache time-to-live in milliseconds"
+        },
+        "stagewise.performance.rateLimitPerMinute": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 100,
+          "description": "Maximum API calls per minute"
+        },
+        "stagewise.images.maxSizeMB": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum image size in megabytes"
+        },
+        "stagewise.images.maxDimension": {
+          "type": "number",
+          "default": 2048,
+          "minimum": 512,
+          "maximum": 4096,
+          "description": "Maximum image dimension (width or height) in pixels"
+        },
+        "stagewise.images.compressionQuality": {
+          "type": "number",
+          "default": 0.9,
+          "minimum": 0.1,
+          "maximum": 1,
+          "description": "Image compression quality (0.1-1.0)"
+        },
+        "stagewise.logging.level": {
+          "type": "string",
+          "default": "info",
+          "enum": ["debug", "info", "warn", "error"],
+          "description": "Logging level for Stagewise operations"
+        },
+        "stagewise.logging.maxLogSize": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 100,
+          "maximum": 10000,
+          "description": "Maximum number of log entries to keep"
         }
       }
     }
@@ -299,12 +377,8 @@
   "turbo": {
     "tasks": {
       "build": {
-        "dependsOn": [
-          "^build"
-        ],
-        "outputs": [
-          "out/**"
-        ]
+        "dependsOn": ["^build"],
+        "outputs": ["out/**"]
       }
     }
   }

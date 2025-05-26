@@ -15,7 +15,7 @@ export enum AuthStatus {
   VALIDATING = 'validating',
   VALID = 'valid',
   INVALID = 'invalid',
-  ERROR = 'error'
+  ERROR = 'error',
 }
 
 export interface AuthStatusChangeEvent {

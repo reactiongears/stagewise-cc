@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Logger } from './logger';
-import { FileOperation, OperationType } from './code-extractor';
+import { type FileOperation, OperationType } from './code-extractor';
 
 /**
  * Result of permission validation
@@ -35,7 +35,12 @@ export interface SecurityResult {
  * Security risk information
  */
 export interface SecurityRisk {
-  type: 'path-traversal' | 'system-file' | 'sensitive-data' | 'executable' | 'large-file';
+  type:
+    | 'path-traversal'
+    | 'system-file'
+    | 'sensitive-data'
+    | 'executable'
+    | 'large-file';
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   filePath?: string;
@@ -74,7 +79,7 @@ export class PermissionChecker {
     'credentials',
     '.ssh',
     '.aws',
-    '.azure'
+    '.azure',
   ];
 
   // Sensitive file patterns
@@ -85,20 +90,32 @@ export class PermissionChecker {
     /api[_-]?key/i,
     /access[_-]?token/i,
     /auth/i,
-    /credential/i
+    /credential/i,
   ];
 
   // Dangerous extensions
   private readonly DANGEROUS_EXTENSIONS = [
-    '.exe', '.dll', '.so', '.dylib',
-    '.bat', '.cmd', '.ps1', '.sh',
-    '.app', '.dmg', '.pkg', '.deb', '.rpm'
+    '.exe',
+    '.dll',
+    '.so',
+    '.dylib',
+    '.bat',
+    '.cmd',
+    '.ps1',
+    '.sh',
+    '.app',
+    '.dmg',
+    '.pkg',
+    '.deb',
+    '.rpm',
   ];
 
   constructor(policy?: PermissionPolicy) {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Permission Checker');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Permission Checker',
+    );
     this.logger = new Logger(this.outputChannel);
-    
+
     // Load default policy with overrides
     this.policy = {
       allowedExtensions: undefined, // Allow all by default
@@ -107,7 +124,7 @@ export class PermissionChecker {
       maxFileSize: 10 * 1024 * 1024, // 10MB default
       requireUserApproval: false,
       allowSystemFiles: false,
-      ...policy
+      ...policy,
     };
 
     this.initializeWorkspace();
@@ -126,21 +143,25 @@ export class PermissionChecker {
   /**
    * Validate permissions for multiple operations
    */
-  async validateOperations(operations: FileOperation[]): Promise<PermissionResult> {
+  async validateOperations(
+    operations: FileOperation[],
+  ): Promise<PermissionResult> {
     const result: PermissionResult = {
       allPermitted: true,
       deniedOperations: [],
       deniedReasons: [],
-      warnings: []
+      warnings: [],
     };
 
     for (const operation of operations) {
       const permissionCheck = await this.checkOperationPermissions(operation);
-      
+
       if (!permissionCheck.isValid) {
         result.allPermitted = false;
         result.deniedOperations.push(operation.id);
-        result.deniedReasons.push(permissionCheck.reason || 'Permission denied');
+        result.deniedReasons.push(
+          permissionCheck.reason || 'Permission denied',
+        );
       }
 
       // Check security
@@ -173,7 +194,9 @@ export class PermissionChecker {
   /**
    * Check permissions for a single operation
    */
-  async checkOperationPermissions(operation: FileOperation): Promise<ValidationResult> {
+  async checkOperationPermissions(
+    operation: FileOperation,
+  ): Promise<ValidationResult> {
     // Validate file path
     const pathValidation = this.validateFilePath(operation.targetPath);
     if (!pathValidation.isValid) {
@@ -184,17 +207,19 @@ export class PermissionChecker {
     switch (operation.type) {
       case OperationType.DELETE:
         return this.checkDeletePermission(operation.targetPath);
-      
+
       case OperationType.CREATE:
       case OperationType.UPDATE:
       case OperationType.APPEND:
         return this.checkWritePermission(operation.targetPath);
-      
+
       case OperationType.MOVE:
-        const sourceCheck = await this.checkDeletePermission(operation.sourcePath || operation.targetPath);
+        const sourceCheck = await this.checkDeletePermission(
+          operation.sourcePath || operation.targetPath,
+        );
         if (!sourceCheck.isValid) return sourceCheck;
         return this.checkWritePermission(operation.targetPath);
-      
+
       default:
         return { isValid: true };
     }
@@ -205,18 +230,18 @@ export class PermissionChecker {
    */
   validateFilePath(filePath: string): ValidationResult {
     if (!filePath || filePath.trim() === '') {
-      return { 
-        isValid: false, 
-        reason: 'File path is empty' 
+      return {
+        isValid: false,
+        reason: 'File path is empty',
       };
     }
 
     // Check for path traversal attempts
     if (filePath.includes('..') || filePath.includes('~')) {
-      return { 
-        isValid: false, 
-        reason: 'Path traversal detected', 
-        suggestion: 'Use absolute paths within the workspace' 
+      return {
+        isValid: false,
+        reason: 'Path traversal detected',
+        suggestion: 'Use absolute paths within the workspace',
       };
     }
 
@@ -224,12 +249,12 @@ export class PermissionChecker {
     if (path.isAbsolute(filePath) && this.workspaceRoot) {
       const normalizedPath = path.normalize(filePath);
       const normalizedRoot = path.normalize(this.workspaceRoot);
-      
+
       if (!normalizedPath.startsWith(normalizedRoot)) {
-        return { 
-          isValid: false, 
-          reason: 'Path is outside workspace boundaries', 
-          suggestion: 'Only files within the workspace can be modified' 
+        return {
+          isValid: false,
+          reason: 'Path is outside workspace boundaries',
+          suggestion: 'Only files within the workspace can be modified',
         };
       }
     }
@@ -237,32 +262,35 @@ export class PermissionChecker {
     // Check blocked paths
     for (const blockedPath of this.policy.blockedPaths || []) {
       if (filePath.includes(blockedPath)) {
-        return { 
-          isValid: false, 
-          reason: `Access to ${blockedPath} is blocked by security policy`, 
-          suggestion: 'This path is protected and cannot be modified' 
+        return {
+          isValid: false,
+          reason: `Access to ${blockedPath} is blocked by security policy`,
+          suggestion: 'This path is protected and cannot be modified',
         };
       }
     }
 
     // Check file extension
     const ext = path.extname(filePath).toLowerCase();
-    
-    if (this.policy.allowedExtensions && this.policy.allowedExtensions.length > 0) {
+
+    if (
+      this.policy.allowedExtensions &&
+      this.policy.allowedExtensions.length > 0
+    ) {
       if (!this.policy.allowedExtensions.includes(ext)) {
-        return { 
-          isValid: false, 
-          reason: `File extension ${ext} is not allowed`, 
-          suggestion: `Allowed extensions: ${this.policy.allowedExtensions.join(', ')}` 
+        return {
+          isValid: false,
+          reason: `File extension ${ext} is not allowed`,
+          suggestion: `Allowed extensions: ${this.policy.allowedExtensions.join(', ')}`,
         };
       }
     }
 
     if (this.policy.blockedExtensions?.includes(ext)) {
-      return { 
-        isValid: false, 
-        reason: `File extension ${ext} is blocked for security reasons`, 
-        suggestion: 'Executable and system files cannot be modified' 
+      return {
+        isValid: false,
+        reason: `File extension ${ext} is blocked for security reasons`,
+        suggestion: 'Executable and system files cannot be modified',
       };
     }
 
@@ -276,7 +304,7 @@ export class PermissionChecker {
     try {
       const uri = vscode.Uri.file(filePath);
       const dir = path.dirname(filePath);
-      
+
       // Check if parent directory exists and is writable
       try {
         await vscode.workspace.fs.stat(vscode.Uri.file(dir));
@@ -307,7 +335,7 @@ export class PermissionChecker {
           type: 'sensitive-data',
           severity: 'high',
           description: `File name suggests sensitive data: ${fileName}`,
-          filePath: operation.targetPath
+          filePath: operation.targetPath,
         });
         recommendations.push('Review file contents for sensitive information');
         break;
@@ -315,23 +343,32 @@ export class PermissionChecker {
     }
 
     // Check file size for create/update operations
-    if (operation.content && operation.content.length > (this.policy.maxFileSize || Infinity)) {
+    if (
+      operation.content &&
+      operation.content.length >
+        (this.policy.maxFileSize || Number.POSITIVE_INFINITY)
+    ) {
       risks.push({
         type: 'large-file',
         severity: 'medium',
         description: `File size (${operation.content.length} bytes) exceeds limit`,
-        filePath: operation.targetPath
+        filePath: operation.targetPath,
       });
-      recommendations.push('Consider splitting large files or using external storage');
+      recommendations.push(
+        'Consider splitting large files or using external storage',
+      );
     }
 
     // Check for system files
-    if (!this.policy.allowSystemFiles && this.isSystemFile(operation.targetPath)) {
+    if (
+      !this.policy.allowSystemFiles &&
+      this.isSystemFile(operation.targetPath)
+    ) {
       risks.push({
         type: 'system-file',
         severity: 'critical',
         description: 'Attempting to modify system file',
-        filePath: operation.targetPath
+        filePath: operation.targetPath,
       });
     }
 
@@ -342,21 +379,25 @@ export class PermissionChecker {
         type: 'executable',
         severity: 'critical',
         description: 'Attempting to create/modify executable file',
-        filePath: operation.targetPath
+        filePath: operation.targetPath,
       });
     }
 
     return {
-      isSecure: risks.filter(r => r.severity === 'critical' || r.severity === 'high').length === 0,
+      isSecure:
+        risks.filter((r) => r.severity === 'critical' || r.severity === 'high')
+          .length === 0,
       risks,
-      recommendations
+      recommendations,
     };
   }
 
   /**
    * Check delete permission
    */
-  private async checkDeletePermission(filePath: string): Promise<ValidationResult> {
+  private async checkDeletePermission(
+    filePath: string,
+  ): Promise<ValidationResult> {
     // Don't allow deleting directories
     try {
       const stat = await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
@@ -364,7 +405,7 @@ export class PermissionChecker {
         return {
           isValid: false,
           reason: 'Cannot delete directories',
-          suggestion: 'Only individual files can be deleted'
+          suggestion: 'Only individual files can be deleted',
         };
       }
     } catch {
@@ -376,7 +417,7 @@ export class PermissionChecker {
       return {
         isValid: false,
         reason: 'Cannot delete critical project files',
-        suggestion: 'This file is essential for the project'
+        suggestion: 'This file is essential for the project',
       };
     }
 
@@ -386,13 +427,15 @@ export class PermissionChecker {
   /**
    * Check write permission
    */
-  private async checkWritePermission(filePath: string): Promise<ValidationResult> {
+  private async checkWritePermission(
+    filePath: string,
+  ): Promise<ValidationResult> {
     const hasAccess = await this.checkWriteAccess(filePath);
     if (!hasAccess) {
       return {
         isValid: false,
         reason: 'No write permission for file path',
-        suggestion: 'Check file permissions and workspace access'
+        suggestion: 'Check file permissions and workspace access',
       };
     }
 
@@ -409,10 +452,10 @@ export class PermissionChecker {
       /^\/bin\//,
       /^\/sbin\//,
       /^C:\\Windows\\/i,
-      /^C:\\Program Files\\/i
+      /^C:\\Program Files\\/i,
     ];
 
-    return systemPatterns.some(pattern => pattern.test(filePath));
+    return systemPatterns.some((pattern) => pattern.test(filePath));
   }
 
   /**
@@ -428,7 +471,7 @@ export class PermissionChecker {
       'webpack.config.js',
       'vite.config.js',
       '.gitignore',
-      'README.md'
+      'README.md',
     ];
 
     const fileName = path.basename(filePath);
@@ -438,9 +481,12 @@ export class PermissionChecker {
   /**
    * Request user approval for operations
    */
-  private async requestUserApproval(operations: FileOperation[]): Promise<boolean> {
-    const items = operations.map(op => 
-      `${op.type.toUpperCase()} ${vscode.workspace.asRelativePath(op.targetPath)}`
+  private async requestUserApproval(
+    operations: FileOperation[],
+  ): Promise<boolean> {
+    const items = operations.map(
+      (op) =>
+        `${op.type.toUpperCase()} ${vscode.workspace.asRelativePath(op.targetPath)}`,
     );
 
     const detail = items.join('\n');
@@ -448,7 +494,7 @@ export class PermissionChecker {
       `Claude Code wants to modify ${operations.length} files`,
       { modal: true, detail },
       'Allow',
-      'Deny'
+      'Deny',
     );
 
     return result === 'Allow';
@@ -472,13 +518,17 @@ export class PermissionChecker {
   /**
    * Audit log for operations
    */
-  async logOperation(operation: FileOperation, result: 'permitted' | 'denied', reason?: string): Promise<void> {
+  async logOperation(
+    operation: FileOperation,
+    result: 'permitted' | 'denied',
+    reason?: string,
+  ): Promise<void> {
     const logEntry = {
       timestamp: new Date(),
       operation: operation.type,
       filePath: operation.targetPath,
       result,
-      reason
+      reason,
     };
 
     this.logger.info(`Security audit: ${JSON.stringify(logEntry)}`);

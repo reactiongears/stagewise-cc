@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { ClaudeService } from '../claude/claude-service';
-import { ClaudeRequest } from '../claude/service-types';
+import type { ClaudeService } from '../claude/claude-service';
+import type { ClaudeRequest } from '../claude/service-types';
 
 export function registerClaudeInteractionCommands(
   context: vscode.ExtensionContext,
-  claudeService: ClaudeService
+  claudeService: ClaudeService,
 ): void {
   // Send Prompt Command
   const sendPromptCommand = vscode.commands.registerCommand(
@@ -16,16 +16,18 @@ export function registerClaudeInteractionCommands(
         if (!session) {
           session = await claudeService.createSession({
             name: 'Interactive Session',
-            description: 'Created from command palette'
+            description: 'Created from command palette',
           });
         }
 
         // Get prompt from user or use provided prompt
-        const prompt = providedPrompt || await vscode.window.showInputBox({
-          prompt: 'Enter your prompt for Claude',
-          placeHolder: 'Ask Claude anything...',
-          ignoreFocusOut: true
-        });
+        const prompt =
+          providedPrompt ||
+          (await vscode.window.showInputBox({
+            prompt: 'Enter your prompt for Claude',
+            placeHolder: 'Ask Claude anything...',
+            ignoreFocusOut: true,
+          }));
 
         if (!prompt) {
           return;
@@ -36,38 +38,42 @@ export function registerClaudeInteractionCommands(
           {
             location: vscode.ProgressLocation.Notification,
             title: 'Sending prompt to Claude...',
-            cancellable: false
+            cancellable: false,
           },
           async (progress) => {
             try {
               const request: ClaudeRequest = {
                 prompt,
                 options: {
-                  stream: false
-                }
+                  stream: false,
+                },
               };
 
               const response = await claudeService.sendPrompt(request);
-              
+
               // Show response in output channel
-              const outputChannel = vscode.window.createOutputChannel('Claude Response');
+              const outputChannel =
+                vscode.window.createOutputChannel('Claude Response');
               outputChannel.clear();
               outputChannel.appendLine('=== Claude Response ===');
               outputChannel.appendLine(response.content);
               outputChannel.appendLine('');
               outputChannel.appendLine(`Model: ${response.metadata.model}`);
-              outputChannel.appendLine(`Processing time: ${response.metadata.processingTime}ms`);
+              outputChannel.appendLine(
+                `Processing time: ${response.metadata.processingTime}ms`,
+              );
               outputChannel.show();
-
             } catch (error) {
-              vscode.window.showErrorMessage(`Failed to get response: ${error}`);
+              vscode.window.showErrorMessage(
+                `Failed to get response: ${error}`,
+              );
             }
-          }
+          },
         );
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to send prompt: ${error}`);
       }
-    }
+    },
   );
 
   // Send Selection to Claude
@@ -87,28 +93,32 @@ export function registerClaudeInteractionCommands(
       }
 
       const selectedText = editor.document.getText(selection);
-      
+
       try {
         // Ensure we have a session
         let session = claudeService.getCurrentSession();
         if (!session) {
           session = await claudeService.createSession({
             name: 'Code Analysis Session',
-            description: 'Analyzing selected code'
+            description: 'Analyzing selected code',
           });
         }
 
         // Ask what to do with selection
-        const action = await vscode.window.showQuickPick([
-          { label: '$(comment) Explain this code', value: 'explain' },
-          { label: '$(debug) Find issues', value: 'debug' },
-          { label: '$(edit) Refactor', value: 'refactor' },
-          { label: '$(test-view-icon) Generate tests', value: 'test' },
-          { label: '$(book) Add documentation', value: 'document' },
-          { label: '$(question) Custom prompt', value: 'custom' }
-        ], {
-          placeHolder: 'What would you like Claude to do with the selected code?'
-        });
+        const action = await vscode.window.showQuickPick(
+          [
+            { label: '$(comment) Explain this code', value: 'explain' },
+            { label: '$(debug) Find issues', value: 'debug' },
+            { label: '$(edit) Refactor', value: 'refactor' },
+            { label: '$(test-view-icon) Generate tests', value: 'test' },
+            { label: '$(book) Add documentation', value: 'document' },
+            { label: '$(question) Custom prompt', value: 'custom' },
+          ],
+          {
+            placeHolder:
+              'What would you like Claude to do with the selected code?',
+          },
+        );
 
         if (!action) {
           return;
@@ -134,7 +144,8 @@ export function registerClaudeInteractionCommands(
           case 'custom':
             const customPrompt = await vscode.window.showInputBox({
               prompt: 'Enter your custom prompt',
-              placeHolder: 'What would you like to know about the selected code?'
+              placeHolder:
+                'What would you like to know about the selected code?',
             });
             if (!customPrompt) {
               return;
@@ -147,21 +158,22 @@ export function registerClaudeInteractionCommands(
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: 'Getting Claude\'s response...',
-            cancellable: false
+            title: "Getting Claude's response...",
+            cancellable: false,
           },
           async () => {
             const request: ClaudeRequest = {
               prompt,
               options: {
-                stream: false
-              }
+                stream: false,
+              },
             };
 
             const response = await claudeService.sendPrompt(request);
-            
+
             // Show response
-            const outputChannel = vscode.window.createOutputChannel('Claude Analysis');
+            const outputChannel =
+              vscode.window.createOutputChannel('Claude Analysis');
             outputChannel.clear();
             outputChannel.appendLine(`=== ${action.label} ===`);
             outputChannel.appendLine('');
@@ -171,26 +183,26 @@ export function registerClaudeInteractionCommands(
             // Offer to apply changes if it's a refactor or documentation
             if (action.value === 'refactor' || action.value === 'document') {
               const apply = await vscode.window.showInformationMessage(
-                'Would you like to apply Claude\'s suggestions?',
+                "Would you like to apply Claude's suggestions?",
                 'Apply',
-                'Cancel'
+                'Cancel',
               );
-              
+
               if (apply === 'Apply') {
                 // This is a simplified implementation
                 // In a real implementation, you'd parse Claude's response
                 // and apply the changes intelligently
-                await editor.edit(editBuilder => {
+                await editor.edit((editBuilder) => {
                   editBuilder.replace(selection, response.content);
                 });
               }
             }
-          }
+          },
         );
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to analyze selection: ${error}`);
       }
-    }
+    },
   );
 
   // New Session Command
@@ -201,7 +213,7 @@ export function registerClaudeInteractionCommands(
         const name = await vscode.window.showInputBox({
           prompt: 'Enter a name for the new session',
           placeHolder: 'My Session',
-          value: `Session ${new Date().toLocaleString()}`
+          value: `Session ${new Date().toLocaleString()}`,
         });
 
         if (!name) {
@@ -211,14 +223,14 @@ export function registerClaudeInteractionCommands(
         const session = await claudeService.createSession({
           name,
           description: 'Created from command palette',
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         vscode.window.showInformationMessage(`Created new session: ${name}`);
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to create session: ${error}`);
       }
-    }
+    },
   );
 
   // Switch Session Command
@@ -232,22 +244,27 @@ export function registerClaudeInteractionCommands(
       }
 
       const current = claudeService.getCurrentSession();
-      const items = sessions.map(session => ({
+      const items = sessions.map((session) => ({
         label: session.metadata.name || session.id,
         description: `${session.history.length} messages`,
-        detail: session.id === current?.id ? '(current)' : `Started ${session.startTime.toLocaleString()}`,
-        session
+        detail:
+          session.id === current?.id
+            ? '(current)'
+            : `Started ${session.startTime.toLocaleString()}`,
+        session,
       }));
 
       const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: 'Select a session to switch to'
+        placeHolder: 'Select a session to switch to',
       });
 
       if (selected) {
         claudeService.setCurrentSession(selected.session.id);
-        vscode.window.showInformationMessage(`Switched to session: ${selected.label}`);
+        vscode.window.showInformationMessage(
+          `Switched to session: ${selected.label}`,
+        );
       }
-    }
+    },
   );
 
   // Clear History Command
@@ -263,14 +280,14 @@ export function registerClaudeInteractionCommands(
       const confirm = await vscode.window.showWarningMessage(
         `Clear all history for session "${session.metadata.name || session.id}"?`,
         { modal: true },
-        'Clear'
+        'Clear',
       );
 
       if (confirm === 'Clear') {
         await claudeService.clearHistory();
         vscode.window.showInformationMessage('Session history cleared');
       }
-    }
+    },
   );
 
   // Show Session History Command
@@ -294,12 +311,14 @@ export function registerClaudeInteractionCommands(
         `Claude History: ${session.metadata.name || session.id}`,
         vscode.ViewColumn.One,
         {
-          enableScripts: true
-        }
+          enableScripts: true,
+        },
       );
 
       // Generate HTML for history
-      const historyHtml = session.history.map(entry => `
+      const historyHtml = session.history
+        .map(
+          (entry) => `
         <div class="entry ${entry.role}">
           <div class="header">
             <span class="role">${entry.role === 'user' ? 'You' : 'Claude'}</span>
@@ -307,7 +326,9 @@ export function registerClaudeInteractionCommands(
           </div>
           <div class="content">${escapeHtml(entry.content)}</div>
         </div>
-      `).join('');
+      `,
+        )
+        .join('');
 
       panel.webview.html = `
         <!DOCTYPE html>
@@ -351,7 +372,7 @@ export function registerClaudeInteractionCommands(
         </body>
         </html>
       `;
-    }
+    },
   );
 
   // Check Health Command
@@ -360,24 +381,24 @@ export function registerClaudeInteractionCommands(
     async () => {
       try {
         const health = await claudeService.getHealth();
-        
+
         const items = [
           `Overall: ${health.overall}`,
           `Subprocess: ${health.subprocess.status} - ${health.subprocess.message || 'OK'}`,
           `Authentication: ${health.auth.status} - ${health.auth.message || 'OK'}`,
           `Configuration: ${health.config.status} - ${health.config.message || 'OK'}`,
-          `Last check: ${health.lastCheck.toLocaleString()}`
+          `Last check: ${health.lastCheck.toLocaleString()}`,
         ];
 
         vscode.window.showInformationMessage(
           'Claude Service Health',
           { modal: true, detail: items.join('\n') },
-          'OK'
+          'OK',
         );
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to check health: ${error}`);
       }
-    }
+    },
   );
 
   // Add all commands to subscriptions
@@ -388,7 +409,7 @@ export function registerClaudeInteractionCommands(
     switchSessionCommand,
     clearHistoryCommand,
     showHistoryCommand,
-    checkHealthCommand
+    checkHealthCommand,
   );
 }
 
@@ -398,7 +419,7 @@ function escapeHtml(text: string): string {
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    "'": '&#039;'
+    "'": '&#039;',
   };
-  return text.replace(/[&<>"']/g, m => map[m]);
+  return text.replace(/[&<>"']/g, (m) => map[m]);
 }

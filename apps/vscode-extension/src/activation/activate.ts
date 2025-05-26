@@ -9,13 +9,30 @@ import { setupToolbar } from './setup-toolbar';
 import { getCurrentIDE } from 'src/utils/get-current-ide';
 import { dispatchAgentCall } from 'src/utils/dispatch-agent-call';
 import { createLifecycleManager } from '../claude/lifecycle-manager';
+import {
+  mcpToolbarIntegration,
+  connectMCPToolsToToolbar,
+} from '../mcp/integration';
+import {
+  ConfigurationManager,
+  migrateConfiguration,
+  showSetupGuide,
+  getConfiguration,
+} from '../utils/configuration';
+import { memoryMonitor, resourceManager } from '../utils/performance';
+import { errorLogger } from '../utils/error-handling';
 
 // Diagnostic collection specifically for our fake prompt
 const fakeDiagCollection =
   vscode.languages.createDiagnosticCollection('stagewise');
 
 // Claude lifecycle manager instance
-let claudeLifecycleManager: ReturnType<typeof createLifecycleManager> | undefined;
+let claudeLifecycleManager:
+  | ReturnType<typeof createLifecycleManager>
+  | undefined;
+
+// Configuration manager instance
+const configManager = new ConfigurationManager();
 
 // Dummy handler for the setupToolbar command
 async function setupToolbarHandler() {
@@ -33,6 +50,23 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(fakeDiagCollection); // Dispose on deactivation
 
   try {
+    // Migrate configuration if needed
+    await migrateConfiguration();
+
+    // Get and validate configuration
+    const config = getConfiguration();
+
+    // Start configuration manager
+    configManager.start();
+    configManager.onConfigurationChange((newConfig) => {
+      console.log('Configuration changed:', newConfig);
+      // Handle configuration changes
+    });
+
+    // Start memory monitoring if enabled
+    if (config.stagewise.logging.level === 'debug') {
+      memoryMonitor.start(30000); // Check every 30 seconds
+    }
     // Find an available port
     const port = await findAvailablePort(DEFAULT_PORT);
 
@@ -71,14 +105,41 @@ export async function activate(context: vscode.ExtensionContext) {
     console.error('Failed to activate Claude Code integration:', error);
     // Don't throw - allow the extension to continue working without Claude
     vscode.window.showWarningMessage(
-      'Claude Code integration failed to activate. The extension will continue without AI assistance.'
+      'Claude Code integration failed to activate. The extension will continue without AI assistance.',
     );
   }
+
+  // Initialize MCP-Toolbar integration
+  try {
+    await mcpToolbarIntegration.initialize();
+    connectMCPToolsToToolbar();
+    console.log('MCP-Toolbar integration activated');
+  } catch (error) {
+    errorLogger.log(error as Error, {
+      operation: 'mcp_toolbar_integration_activation',
+      timestamp: new Date(),
+    });
+    vscode.window.showWarningMessage(
+      'Failed to initialize MCP-Toolbar integration. Some features may be limited.',
+    );
+  }
+
+  // Register setup guide command
+  const setupGuideCommand = vscode.commands.registerCommand(
+    'stagewise-cc.showSetupGuide',
+    showSetupGuide,
+  );
+  context.subscriptions.push(setupGuideCommand);
+
+  // Show activation message
+  vscode.window.showInformationMessage(
+    `Stagewise activated successfully on port ${await findAvailablePort(DEFAULT_PORT)}`,
+  );
 }
 
 export async function deactivate() {
   await stopServer();
-  
+
   // Deactivate Claude Code integration
   if (claudeLifecycleManager) {
     try {
@@ -86,5 +147,18 @@ export async function deactivate() {
     } catch (error) {
       console.error('Error deactivating Claude Code integration:', error);
     }
+  }
+
+  // Stop configuration manager
+  configManager.stop();
+
+  // Stop memory monitor
+  memoryMonitor.stop();
+
+  // Clean up resources
+  try {
+    await resourceManager.cleanup();
+  } catch (error) {
+    console.error('Error cleaning up resources:', error);
   }
 }

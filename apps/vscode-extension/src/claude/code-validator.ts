@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as ts from 'typescript';
 import { Logger } from './logger';
-import { FileOperation, ValidationResult } from './code-extractor';
+import type { FileOperation, ValidationResult } from './code-extractor';
 
 /**
  * Syntax validation result
@@ -79,9 +79,11 @@ export class CodeValidator {
     eval: /\beval\s*\(/g,
     innerHTML: /\.innerHTML\s*=/g,
     dangerouslySetInnerHTML: /dangerouslySetInnerHTML/g,
-    hardcodedSecrets: /(?:api[_-]?key|password|secret|token)\s*[:=]\s*["'][^"']+["']/gi,
-    sqlInjection: /(?:SELECT|INSERT|UPDATE|DELETE).*\+.*(?:req\.|params\.|query\.)/gi,
-    commandInjection: /(?:exec|spawn|system)\s*\([^)]*\+/g
+    hardcodedSecrets:
+      /(?:api[_-]?key|password|secret|token)\s*[:=]\s*["'][^"']+["']/gi,
+    sqlInjection:
+      /(?:SELECT|INSERT|UPDATE|DELETE).*\+.*(?:req\.|params\.|query\.)/gi,
+    commandInjection: /(?:exec|spawn|system)\s*\([^)]*\+/g,
   };
 
   // Common style patterns
@@ -89,11 +91,13 @@ export class CodeValidator {
     camelCase: /^[a-z][a-zA-Z0-9]*$/,
     pascalCase: /^[A-Z][a-zA-Z0-9]*$/,
     kebabCase: /^[a-z]+(?:-[a-z]+)*$/,
-    snakeCase: /^[a-z]+(?:_[a-z]+)*$/
+    snakeCase: /^[a-z]+(?:_[a-z]+)*$/,
   };
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Code Validator');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Code Validator',
+    );
     this.logger = new Logger(this.outputChannel);
   }
 
@@ -106,7 +110,7 @@ export class CodeValidator {
       errors: [],
       warnings: [],
       suggestions: [],
-      syntaxErrors: []
+      syntaxErrors: [],
     };
 
     switch (language.toLowerCase()) {
@@ -141,7 +145,7 @@ export class CodeValidator {
       suggestions: [],
       missingImports: [],
       unusedImports: [],
-      exportIssues: []
+      exportIssues: [],
     };
 
     if (!operation.content) {
@@ -149,7 +153,7 @@ export class CodeValidator {
     }
 
     const language = operation.metadata?.language || 'javascript';
-    
+
     if (['typescript', 'javascript', 'tsx', 'jsx'].includes(language)) {
       // Analyze imports and exports
       const importAnalysis = this.analyzeImports(operation.content);
@@ -161,12 +165,16 @@ export class CodeValidator {
       result.exportIssues = exportIssues;
 
       if (result.missingImports.length > 0) {
-        result.errors.push(`Missing imports: ${result.missingImports.join(', ')}`);
+        result.errors.push(
+          `Missing imports: ${result.missingImports.join(', ')}`,
+        );
         result.isValid = false;
       }
 
       if (result.unusedImports.length > 0) {
-        result.warnings.push(`Unused imports: ${result.unusedImports.join(', ')}`);
+        result.warnings.push(
+          `Unused imports: ${result.unusedImports.join(', ')}`,
+        );
       }
     }
 
@@ -188,7 +196,7 @@ export class CodeValidator {
       warnings: [],
       suggestions: [],
       securityIssues: [],
-      riskScore: 0
+      riskScore: 0,
     };
 
     // Check for eval usage
@@ -199,7 +207,8 @@ export class CodeValidator {
         severity: 'high',
         line: this.getLineNumber(code, match.index!),
         description: 'Usage of eval() is dangerous and should be avoided',
-        recommendation: 'Use JSON.parse() for JSON data or Function constructor for dynamic code'
+        recommendation:
+          'Use JSON.parse() for JSON data or Function constructor for dynamic code',
       });
     }
 
@@ -210,8 +219,9 @@ export class CodeValidator {
         type: 'xss',
         severity: 'high',
         line: this.getLineNumber(code, match.index!),
-        description: 'Direct innerHTML assignment can lead to XSS vulnerabilities',
-        recommendation: 'Use textContent for text or sanitize HTML content'
+        description:
+          'Direct innerHTML assignment can lead to XSS vulnerabilities',
+        recommendation: 'Use textContent for text or sanitize HTML content',
       });
     }
 
@@ -223,15 +233,17 @@ export class CodeValidator {
         severity: 'critical',
         line: this.getLineNumber(code, match.index!),
         description: 'Hardcoded secrets detected in code',
-        recommendation: 'Use environment variables or secure key management'
+        recommendation: 'Use environment variables or secure key management',
       });
     }
 
     // Calculate risk score
     result.riskScore = this.calculateRiskScore(result.securityIssues);
-    
+
     if (result.securityIssues.length > 0) {
-      result.warnings.push(`Found ${result.securityIssues.length} security issues`);
+      result.warnings.push(
+        `Found ${result.securityIssues.length} security issues`,
+      );
       if (result.riskScore > 70) {
         result.isValid = false;
         result.errors.push('Critical security issues detected');
@@ -251,7 +263,7 @@ export class CodeValidator {
       warnings: [],
       suggestions: [],
       styleViolations: [],
-      formattingIssues: []
+      formattingIssues: [],
     };
 
     // Check indentation consistency
@@ -263,16 +275,21 @@ export class CodeValidator {
     // Check line length
     const longLines = this.checkLineLength(code, 120);
     if (longLines.length > 0) {
-      result.styleViolations.push(...longLines.map(line => ({
-        rule: 'max-line-length',
-        line: line.number,
-        message: `Line exceeds 120 characters (${line.length})`,
-        fixable: false
-      })));
+      result.styleViolations.push(
+        ...longLines.map((line) => ({
+          rule: 'max-line-length',
+          line: line.number,
+          message: `Line exceeds 120 characters (${line.length})`,
+          fixable: false,
+        })),
+      );
     }
 
     // Check naming conventions for JavaScript/TypeScript
-    if (!language || ['javascript', 'typescript', 'jsx', 'tsx'].includes(language)) {
+    if (
+      !language ||
+      ['javascript', 'typescript', 'jsx', 'tsx'].includes(language)
+    ) {
       const namingIssues = this.checkNamingConventions(code);
       result.styleViolations.push(...namingIssues);
     }
@@ -293,14 +310,17 @@ export class CodeValidator {
   /**
    * Validate TypeScript code
    */
-  private validateTypeScript(code: string, checkTypes: boolean): SyntaxValidationResult {
+  private validateTypeScript(
+    code: string,
+    checkTypes: boolean,
+  ): SyntaxValidationResult {
     const result: SyntaxValidationResult = {
       isValid: true,
       errors: [],
       warnings: [],
       suggestions: [],
       syntaxErrors: [],
-      hasTypeErrors: false
+      hasTypeErrors: false,
     };
 
     try {
@@ -308,7 +328,7 @@ export class CodeValidator {
         'temp.ts',
         code,
         ts.ScriptTarget.Latest,
-        true
+        true,
       );
 
       // Check for syntax errors
@@ -317,7 +337,7 @@ export class CodeValidator {
 
       if (syntaxErrors.length > 0) {
         result.isValid = false;
-        result.errors = syntaxErrors.map(e => e.message);
+        result.errors = syntaxErrors.map((e) => e.message);
       }
 
       // Basic type checking
@@ -345,7 +365,7 @@ export class CodeValidator {
       errors: [],
       warnings: [],
       suggestions: [],
-      syntaxErrors: []
+      syntaxErrors: [],
     };
 
     try {
@@ -355,7 +375,7 @@ export class CodeValidator {
         code,
         ts.ScriptTarget.Latest,
         true,
-        ts.ScriptKind.JS
+        ts.ScriptKind.JS,
       );
 
       const syntaxErrors = this.findSyntaxErrors(sourceFile);
@@ -363,7 +383,7 @@ export class CodeValidator {
 
       if (syntaxErrors.length > 0) {
         result.isValid = false;
-        result.errors = syntaxErrors.map(e => e.message);
+        result.errors = syntaxErrors.map((e) => e.message);
       }
     } catch (error) {
       result.isValid = false;
@@ -382,11 +402,12 @@ export class CodeValidator {
       errors: [],
       warnings: [],
       suggestions: [],
-      syntaxErrors: []
+      syntaxErrors: [],
     };
 
     // Basic CSS validation
-    const braceCount = (code.match(/{/g) || []).length - (code.match(/}/g) || []).length;
+    const braceCount =
+      (code.match(/{/g) || []).length - (code.match(/}/g) || []).length;
     if (braceCount !== 0) {
       result.isValid = false;
       result.errors.push('Mismatched braces in CSS');
@@ -414,7 +435,7 @@ export class CodeValidator {
       errors: [],
       warnings: [],
       suggestions: [],
-      syntaxErrors: []
+      syntaxErrors: [],
     };
 
     try {
@@ -422,16 +443,16 @@ export class CodeValidator {
     } catch (error: any) {
       result.isValid = false;
       result.errors.push(`JSON parsing error: ${error.message}`);
-      
+
       // Try to extract line number from error
       const lineMatch = error.message.match(/position (\d+)/);
       if (lineMatch) {
-        const position = parseInt(lineMatch[1], 10);
+        const position = Number.parseInt(lineMatch[1], 10);
         const line = this.getLineNumber(code, position);
         result.syntaxErrors.push({
           line,
           column: 0,
-          message: error.message
+          message: error.message,
         });
       }
     }
@@ -448,7 +469,7 @@ export class CodeValidator {
       errors: [],
       warnings: [],
       suggestions: [],
-      syntaxErrors: []
+      syntaxErrors: [],
     };
 
     // Check for unclosed tags
@@ -464,7 +485,9 @@ export class CodeValidator {
       } else if (closeTag) {
         const expectedTag = tagStack.pop();
         if (expectedTag !== closeTag) {
-          result.errors.push(`Mismatched closing tag: expected </${expectedTag}>, found </${closeTag}>`);
+          result.errors.push(
+            `Mismatched closing tag: expected </${expectedTag}>, found </${closeTag}>`,
+          );
           result.isValid = false;
         }
       }
@@ -486,11 +509,13 @@ export class CodeValidator {
 
     const visit = (node: ts.Node) => {
       if (node.kind === ts.SyntaxKind.Unknown) {
-        const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+        const { line, character } = sourceFile.getLineAndCharacterOfPosition(
+          node.getStart(),
+        );
         errors.push({
           line: line + 1,
           column: character + 1,
-          message: 'Unknown syntax'
+          message: 'Unknown syntax',
         });
       }
       ts.forEachChild(node, visit);
@@ -509,13 +534,17 @@ export class CodeValidator {
     const visit = (node: ts.Node) => {
       // Check for 'any' usage
       if (node.kind === ts.SyntaxKind.AnyKeyword) {
-        issues.push('Usage of "any" type detected - consider using more specific types');
+        issues.push(
+          'Usage of "any" type detected - consider using more specific types',
+        );
       }
 
       // Check for missing return types
       if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) {
         if (!node.type) {
-          issues.push(`Function "${node.name?.getText()}" is missing return type annotation`);
+          issues.push(
+            `Function "${node.name?.getText()}" is missing return type annotation`,
+          );
         }
       }
 
@@ -529,31 +558,37 @@ export class CodeValidator {
   /**
    * Analyze imports
    */
-  private analyzeImports(code: string): { missing: string[]; unused: string[] } {
+  private analyzeImports(code: string): {
+    missing: string[];
+    unused: string[];
+  } {
     const imports = new Set<string>();
     const used = new Set<string>();
 
     // Extract imports
-    const importMatches = code.matchAll(/import\s+(?:{([^}]+)}|\*\s+as\s+(\w+)|(\w+))\s+from/g);
+    const importMatches = code.matchAll(
+      /import\s+(?:{([^}]+)}|\*\s+as\s+(\w+)|(\w+))\s+from/g,
+    );
     for (const match of importMatches) {
-      const namedImports = match[1]?.split(',').map(s => s.trim()) || [];
+      const namedImports = match[1]?.split(',').map((s) => s.trim()) || [];
       const namespaceImport = match[2];
       const defaultImport = match[3];
 
       if (namespaceImport) imports.add(namespaceImport);
       if (defaultImport) imports.add(defaultImport);
-      namedImports.forEach(name => imports.add(name.split(' as ')[0].trim()));
+      namedImports.forEach((name) => imports.add(name.split(' as ')[0].trim()));
     }
 
     // Check usage (simplified)
     for (const imp of imports) {
       const usageRegex = new RegExp(`\\b${imp}\\b`, 'g');
-      if ((code.match(usageRegex) || []).length > 1) { // More than just the import
+      if ((code.match(usageRegex) || []).length > 1) {
+        // More than just the import
         used.add(imp);
       }
     }
 
-    const unused = Array.from(imports).filter(imp => !used.has(imp));
+    const unused = Array.from(imports).filter((imp) => !used.has(imp));
     const missing: string[] = []; // Would need more complex analysis
 
     return { missing, unused };
@@ -577,19 +612,27 @@ export class CodeValidator {
   /**
    * Validate framework-specific structure
    */
-  private validateFrameworkStructure(operation: FileOperation, result: StructureResult): void {
+  private validateFrameworkStructure(
+    operation: FileOperation,
+    result: StructureResult,
+  ): void {
     const framework = operation.metadata?.framework?.toLowerCase();
     const content = operation.content || '';
 
     switch (framework) {
       case 'react':
-        if (!content.includes('import React') && !content.includes('import { ')) {
+        if (
+          !content.includes('import React') &&
+          !content.includes('import { ')
+        ) {
           result.warnings.push('React component missing React import');
         }
         break;
       case 'vue':
         if (!content.includes('<template>') && !content.includes('render(')) {
-          result.warnings.push('Vue component missing template or render function');
+          result.warnings.push(
+            'Vue component missing template or render function',
+          );
         }
         break;
     }
@@ -603,7 +646,7 @@ export class CodeValidator {
       critical: 40,
       high: 25,
       medium: 10,
-      low: 5
+      low: 5,
     };
 
     let score = 0;
@@ -649,7 +692,10 @@ export class CodeValidator {
   /**
    * Check line length
    */
-  private checkLineLength(code: string, maxLength: number): { number: number; length: number }[] {
+  private checkLineLength(
+    code: string,
+    maxLength: number,
+  ): { number: number; length: number }[] {
     const lines = code.split('\n');
     const longLines: { number: number; length: number }[] = [];
 
@@ -672,12 +718,15 @@ export class CodeValidator {
     const varMatches = code.matchAll(/(?:const|let|var)\s+(\w+)/g);
     for (const match of varMatches) {
       const name = match[1];
-      if (!this.stylePatterns.camelCase.test(name) && name !== name.toUpperCase()) {
+      if (
+        !this.stylePatterns.camelCase.test(name) &&
+        name !== name.toUpperCase()
+      ) {
         violations.push({
           rule: 'variable-naming',
           line: this.getLineNumber(code, match.index!),
           message: `Variable "${name}" should use camelCase`,
-          fixable: true
+          fixable: true,
         });
       }
     }
@@ -691,7 +740,7 @@ export class CodeValidator {
           rule: 'class-naming',
           line: this.getLineNumber(code, match.index!),
           message: `Class "${name}" should use PascalCase`,
-          fixable: true
+          fixable: true,
         });
       }
     }
@@ -706,27 +755,35 @@ export class CodeValidator {
     const smells: string[] = [];
 
     // Long functions
-    const functionMatches = code.matchAll(/function\s+\w+\s*\([^)]*\)\s*{|(?:const|let|var)\s+\w+\s*=\s*(?:async\s+)?(?:\([^)]*\)|[^=]+)\s*=>\s*{/g);
+    const functionMatches = code.matchAll(
+      /function\s+\w+\s*\([^)]*\)\s*{|(?:const|let|var)\s+\w+\s*=\s*(?:async\s+)?(?:\([^)]*\)|[^=]+)\s*=>\s*{/g,
+    );
     for (const match of functionMatches) {
       const startIndex = match.index!;
       const functionBody = this.extractBlock(code, startIndex);
       const lineCount = functionBody.split('\n').length;
-      
+
       if (lineCount > 50) {
-        smells.push(`Long function detected (${lineCount} lines) - consider breaking it down`);
+        smells.push(
+          `Long function detected (${lineCount} lines) - consider breaking it down`,
+        );
       }
     }
 
     // Deeply nested code
     const maxNesting = this.getMaxNestingLevel(code);
     if (maxNesting > 4) {
-      smells.push(`Deep nesting detected (level ${maxNesting}) - consider refactoring`);
+      smells.push(
+        `Deep nesting detected (level ${maxNesting}) - consider refactoring`,
+      );
     }
 
     // Large files
     const lineCount = code.split('\n').length;
     if (lineCount > 500) {
-      smells.push(`Large file (${lineCount} lines) - consider splitting into smaller modules`);
+      smells.push(
+        `Large file (${lineCount} lines) - consider splitting into smaller modules`,
+      );
     }
 
     return smells;
@@ -786,7 +843,22 @@ export class CodeValidator {
    * Check if HTML tag is self-closing
    */
   private isSelfClosingTag(tag: string): boolean {
-    const selfClosing = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+    const selfClosing = [
+      'area',
+      'base',
+      'br',
+      'col',
+      'embed',
+      'hr',
+      'img',
+      'input',
+      'link',
+      'meta',
+      'param',
+      'source',
+      'track',
+      'wbr',
+    ];
     return selfClosing.includes(tag.toLowerCase());
   }
 

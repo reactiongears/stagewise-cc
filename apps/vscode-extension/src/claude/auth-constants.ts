@@ -46,14 +46,20 @@ export const VALIDATION_ENDPOINT = 'https://api.anthropic.com/v1/messages';
  * User-friendly error messages for authentication issues
  */
 export const ERROR_MESSAGES = {
-  INVALID_FORMAT: 'Invalid API key format. Anthropic API keys should start with "sk-ant-".',
-  NETWORK_ERROR: 'Unable to connect to Claude API. Please check your internet connection.',
-  INVALID_KEY: 'The API key is invalid or has been revoked. Please check your key.',
+  INVALID_FORMAT:
+    'Invalid API key format. Anthropic API keys should start with "sk-ant-".',
+  NETWORK_ERROR:
+    'Unable to connect to Claude API. Please check your internet connection.',
+  INVALID_KEY:
+    'The API key is invalid or has been revoked. Please check your key.',
   RATE_LIMITED: 'Rate limit exceeded. Please try again later.',
   VALIDATION_FAILED: 'Failed to validate API key. Please try again.',
-  STORAGE_ERROR: 'Failed to store API key securely. Please check VSCode permissions.',
-  NOT_CONFIGURED: 'Claude API key not configured. Please set your API key to continue.',
-  UNKNOWN_ERROR: 'An unexpected error occurred. Please try again or check the output channel for details.'
+  STORAGE_ERROR:
+    'Failed to store API key securely. Please check VSCode permissions.',
+  NOT_CONFIGURED:
+    'Claude API key not configured. Please set your API key to continue.',
+  UNKNOWN_ERROR:
+    'An unexpected error occurred. Please try again or check the output channel for details.',
 } as const;
 
 /**
@@ -67,5 +73,5 @@ export const MIGRATION_FLAG_KEY = `${SECRET_KEY_PREFIX}.migrated`;
 export const LEGACY_STORAGE_KEYS = {
   WORKSPACE_SETTING: 'stagewise-cc.claude.apiKey',
   USER_SETTING: 'stagewise-cc.claude.apiKey',
-  ENV_VARIABLE: 'ANTHROPIC_API_KEY'
+  ENV_VARIABLE: 'ANTHROPIC_API_KEY',
 } as const;

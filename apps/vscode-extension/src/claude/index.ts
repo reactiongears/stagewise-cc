@@ -19,7 +19,7 @@ export * from './service-types';
 
 // Error handling
 export { ErrorHandler, createErrorHandler } from './error-handler';
-export { 
+export {
   ErrorCategory,
   ErrorSeverity,
   ClaudeError,
@@ -35,18 +35,23 @@ export {
   ErrorContext,
   ErrorReport,
   RecoveryStrategy,
-  ErrorMetrics
+  ErrorMetrics,
 } from './error-types';
 
 // Lifecycle management
 export { LifecycleManager, createLifecycleManager } from './lifecycle-manager';
 
 // Logging
-export { Logger, ScopedLogger, createLogger, createScopedLogger } from './logger';
+export {
+  Logger,
+  ScopedLogger,
+  createLogger,
+  createScopedLogger,
+} from './logger';
 
 // Context interfaces
 export * from './prompt-context';
-export { 
+export {
   // Export everything except Position to avoid conflict with service-types
   type WorkspaceInfo,
   type WorkspaceFolder,
@@ -59,9 +64,9 @@ export {
   validateFileInfo,
   createFileInfo,
   isConfigurationFile,
-  estimateFileImportance
+  estimateFileImportance,
 } from './workspace-types';
-export { 
+export {
   // Export everything except Position to avoid conflict
   type DOMElementData,
   type DOMRect,
@@ -75,7 +80,7 @@ export {
   isInteractiveElement,
   estimateElementImportance,
   serializeDOMElement,
-  truncateTextContent
+  truncateTextContent,
 } from './dom-types';
 export * from './transformation-types';
 

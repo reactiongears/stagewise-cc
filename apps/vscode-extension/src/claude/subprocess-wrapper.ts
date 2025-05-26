@@ -1,7 +1,11 @@
-import { ChildProcess, spawn } from 'child_process';
+import { type ChildProcess, spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import * as vscode from 'vscode';
-import { ClaudeProcessOptions, ClaudeProcessState, ClaudeResponse } from './types';
+import type {
+  ClaudeProcessOptions,
+  ClaudeProcessState,
+  ClaudeResponse,
+} from './types';
 import {
   CLAUDE_CLI_COMMAND,
   DEFAULT_TIMEOUT_MS,
@@ -11,23 +15,23 @@ import {
   RESPONSE_DELIMITER,
   ERROR_PATTERNS,
   BUFFER_SIZE,
-  SHUTDOWN_GRACE_PERIOD_MS
+  SHUTDOWN_GRACE_PERIOD_MS,
 } from './constants';
 
 export class ClaudeSubprocessWrapper extends EventEmitter {
   private process?: ChildProcess;
   private state: ClaudeProcessState = { isRunning: false };
-  private responseBuffer: string = '';
+  private responseBuffer = '';
   private healthCheckTimer?: NodeJS.Timeout;
   private responseTimeout?: NodeJS.Timeout;
   private restartAttempts = 0;
   private outputChannel: vscode.OutputChannel;
-  
+
   constructor(private options: ClaudeProcessOptions) {
     super();
     this.outputChannel = vscode.window.createOutputChannel('Claude Code');
   }
-  
+
   async start(): Promise<void> {
     if (this.state.isRunning) {
       this.log('Claude process is already running');
@@ -38,7 +42,8 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
       // Check if Claude CLI is available
       const claudeAvailable = await this.checkClaudeCliAvailable();
       if (!claudeAvailable) {
-        const message = 'Claude CLI not found. Please install it using: npm install -g @anthropic-ai/claude-cli';
+        const message =
+          'Claude CLI not found. Please install it using: npm install -g @anthropic-ai/claude-cli';
         vscode.window.showErrorMessage(message);
         throw new Error(message);
       }
@@ -47,7 +52,7 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
       const env = {
         ...process.env,
         ANTHROPIC_API_KEY: this.options.apiKey,
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
       };
 
       const args = [];
@@ -64,7 +69,7 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
       this.process = spawn(CLAUDE_CLI_COMMAND, args, {
         env,
         cwd: this.options.workingDirectory || vscode.workspace.rootPath,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       if (!this.process.pid) {
@@ -76,7 +81,7 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
         isRunning: true,
         pid: this.process.pid,
         startTime: new Date(),
-        lastActivity: new Date()
+        lastActivity: new Date(),
       };
 
       // Attach event listeners
@@ -88,7 +93,6 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
       // Emit ready event
       this.emit('ready');
       this.log(`Claude process started with PID: ${this.process.pid}`);
-
     } catch (error) {
       this.handleError('Failed to start Claude process', error);
       throw error;
@@ -125,7 +129,6 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
           this.state.lastActivity = new Date();
           resolve();
         }
-
       } catch (error) {
         this.handleError('Failed to send prompt', error);
         reject(error);
@@ -174,10 +177,12 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
   }
 
   isHealthy(): boolean {
-    return this.state.isRunning && 
-           this.process !== undefined && 
-           !this.process.killed &&
-           this.process.pid !== undefined;
+    return (
+      this.state.isRunning &&
+      this.process !== undefined &&
+      !this.process.killed &&
+      this.process.pid !== undefined
+    );
   }
 
   getState(): ClaudeProcessState {
@@ -230,7 +235,9 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
       const match = this.responseBuffer.match(RESPONSE_DELIMITER);
       if (match) {
         const completeResponse = this.responseBuffer.substring(0, match.index);
-        this.responseBuffer = this.responseBuffer.substring(match.index! + match[0].length);
+        this.responseBuffer = this.responseBuffer.substring(
+          match.index! + match[0].length,
+        );
 
         // Clear response timeout
         if (this.responseTimeout) {
@@ -243,8 +250,8 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
           content: completeResponse.trim(),
           isStreaming: false,
           metadata: {
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         };
         this.emit('data', response);
       }
@@ -253,7 +260,7 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
       if (this.responseBuffer.length > BUFFER_SIZE) {
         const response: ClaudeResponse = {
           content: this.responseBuffer,
-          isStreaming: true
+          isStreaming: true,
         };
         this.emit('data', response);
         this.responseBuffer = '';
@@ -286,22 +293,26 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
     // Attempt restart if it was unexpected
     if (code !== 0 && this.restartAttempts < MAX_RESTART_ATTEMPTS) {
       this.restartAttempts++;
-      this.log(`Attempting restart ${this.restartAttempts}/${MAX_RESTART_ATTEMPTS}`);
-      
+      this.log(
+        `Attempting restart ${this.restartAttempts}/${MAX_RESTART_ATTEMPTS}`,
+      );
+
       setTimeout(() => {
         this.start().catch((error) => {
           this.handleError('Failed to restart Claude process', error);
         });
       }, RESTART_DELAY_MS);
     } else if (this.restartAttempts >= MAX_RESTART_ATTEMPTS) {
-      vscode.window.showErrorMessage('Claude process failed to restart. Please check your configuration.');
+      vscode.window.showErrorMessage(
+        'Claude process failed to restart. Please check your configuration.',
+      );
     }
   }
 
   private handleTimeout(): void {
     this.log('Response timeout occurred', 'warning');
     this.emit('error', new Error('Response timeout'));
-    
+
     // Consider restarting if process is unresponsive
     if (!this.isHealthy()) {
       this.stop().then(() => this.start());
@@ -331,7 +342,10 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
     this.emit('error', new Error(errorMessage));
   }
 
-  private log(message: string, level: 'info' | 'warning' | 'error' = 'info'): void {
+  private log(
+    message: string,
+    level: 'info' | 'warning' | 'error' = 'info',
+  ): void {
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
     this.outputChannel.appendLine(logMessage);

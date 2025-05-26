@@ -1,4 +1,4 @@
-import { FileOperation, OperationType, RiskLevel } from './code-extractor';
+import type { FileOperation, RiskLevel } from './code-extractor';
 
 /**
  * Complete diff preview for multiple files
@@ -173,7 +173,12 @@ export interface RiskAssessment {
  * Individual risk factor
  */
 export interface RiskFactor {
-  type: 'breaking-change' | 'security' | 'performance' | 'complexity' | 'dependency';
+  type:
+    | 'breaking-change'
+    | 'security'
+    | 'performance'
+    | 'complexity'
+    | 'dependency';
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   mitigation?: string;

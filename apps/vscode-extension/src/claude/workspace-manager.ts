@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
 import { Logger } from './logger';
 
 /**
@@ -25,7 +24,9 @@ export class WorkspaceManager {
   private workspaceRoot: string | null = null;
 
   constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Claude Workspace Manager');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Workspace Manager',
+    );
     this.logger = new Logger(this.outputChannel);
     this.initializeWorkspace();
     this.setupFileWatcher();
@@ -52,15 +53,15 @@ export class WorkspaceManager {
 
     this.fileWatcher = vscode.workspace.createFileSystemWatcher('**/*');
 
-    this.fileWatcher.onDidCreate(uri => {
+    this.fileWatcher.onDidCreate((uri) => {
       this.logger.debug(`File created externally: ${uri.fsPath}`);
     });
 
-    this.fileWatcher.onDidDelete(uri => {
+    this.fileWatcher.onDidDelete((uri) => {
       this.logger.debug(`File deleted externally: ${uri.fsPath}`);
     });
 
-    this.fileWatcher.onDidChange(uri => {
+    this.fileWatcher.onDidChange((uri) => {
       this.logger.debug(`File changed externally: ${uri.fsPath}`);
     });
   }
@@ -74,7 +75,7 @@ export class WorkspaceManager {
       hasWorkspace: false,
       hasWritePermission: false,
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     // Check if workspace is open
@@ -88,10 +89,13 @@ export class WorkspaceManager {
 
     // Check write permissions
     try {
-      const testFile = path.join(this.workspaceRoot, '.stagewise-test-' + Date.now());
+      const testFile = path.join(
+        this.workspaceRoot,
+        '.stagewise-test-' + Date.now(),
+      );
       await vscode.workspace.fs.writeFile(
         vscode.Uri.file(testFile),
-        new TextEncoder().encode('test')
+        new TextEncoder().encode('test'),
       );
       await vscode.workspace.fs.delete(vscode.Uri.file(testFile));
       validation.hasWritePermission = true;
@@ -104,8 +108,9 @@ export class WorkspaceManager {
     try {
       const stats = await this.getWorkspaceStats();
       validation.availableSpace = stats.availableSpace;
-      
-      if (stats.availableSpace < 100 * 1024 * 1024) { // Less than 100MB
+
+      if (stats.availableSpace < 100 * 1024 * 1024) {
+        // Less than 100MB
         validation.warnings.push('Low disk space available');
       }
     } catch (error) {
@@ -118,7 +123,9 @@ export class WorkspaceManager {
       await vscode.workspace.fs.stat(vscode.Uri.file(gitPath));
       this.logger.debug('Git repository detected');
     } catch {
-      validation.warnings.push('Not a git repository - version control recommended');
+      validation.warnings.push(
+        'Not a git repository - version control recommended',
+      );
     }
 
     return validation;
@@ -136,11 +143,11 @@ export class WorkspaceManager {
     if (path.isAbsolute(relativePath)) {
       const normalizedPath = path.normalize(relativePath);
       const normalizedRoot = path.normalize(this.workspaceRoot);
-      
+
       if (!normalizedPath.startsWith(normalizedRoot)) {
         throw new Error(`Path is outside workspace: ${relativePath}`);
       }
-      
+
       return normalizedPath;
     }
 
@@ -170,7 +177,10 @@ export class WorkspaceManager {
       }
     } catch (error) {
       // Directory doesn't exist, create it
-      if ((error as any).code === 'FileNotFound' || (error as any).message?.includes('ENOENT')) {
+      if (
+        (error as any).code === 'FileNotFound' ||
+        (error as any).message?.includes('ENOENT')
+      ) {
         await vscode.workspace.fs.createDirectory(uri);
         this.logger.debug(`Created directory: ${dirPath}`);
       } else {
@@ -182,13 +192,16 @@ export class WorkspaceManager {
   /**
    * Get list of all files in workspace
    */
-  async getWorkspaceFiles(pattern: string = '**/*'): Promise<string[]> {
+  async getWorkspaceFiles(pattern = '**/*'): Promise<string[]> {
     if (!this.workspaceRoot) {
       return [];
     }
 
-    const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
-    return files.map(uri => vscode.workspace.asRelativePath(uri));
+    const files = await vscode.workspace.findFiles(
+      pattern,
+      '**/node_modules/**',
+    );
+    return files.map((uri) => vscode.workspace.asRelativePath(uri));
   }
 
   /**
@@ -223,7 +236,9 @@ export class WorkspaceManager {
   /**
    * Handle multi-root workspaces
    */
-  getWorkspaceFolderForPath(filePath: string): vscode.WorkspaceFolder | undefined {
+  getWorkspaceFolderForPath(
+    filePath: string,
+  ): vscode.WorkspaceFolder | undefined {
     const uri = vscode.Uri.file(filePath);
     return vscode.workspace.getWorkspaceFolder(uri);
   }
@@ -231,7 +246,10 @@ export class WorkspaceManager {
   /**
    * Get workspace statistics
    */
-  private async getWorkspaceStats(): Promise<{ totalSpace: number; availableSpace: number }> {
+  private async getWorkspaceStats(): Promise<{
+    totalSpace: number;
+    availableSpace: number;
+  }> {
     if (!this.workspaceRoot) {
       throw new Error('No workspace folder is open');
     }
@@ -242,7 +260,7 @@ export class WorkspaceManager {
       // Simulated values for now
       resolve({
         totalSpace: 500 * 1024 * 1024 * 1024, // 500GB
-        availableSpace: 100 * 1024 * 1024 * 1024 // 100GB
+        availableSpace: 100 * 1024 * 1024 * 1024, // 100GB
       });
     });
   }
@@ -264,21 +282,32 @@ export class WorkspaceManager {
   /**
    * Update workspace configuration
    */
-  async updateConfiguration(section: string, value: any, target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace): Promise<void> {
+  async updateConfiguration(
+    section: string,
+    value: any,
+    target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
+  ): Promise<void> {
     await vscode.workspace.getConfiguration().update(section, value, target);
   }
 
   /**
    * Find files matching pattern
    */
-  async findFiles(include: vscode.GlobPattern, exclude?: vscode.GlobPattern | null, maxResults?: number): Promise<vscode.Uri[]> {
+  async findFiles(
+    include: vscode.GlobPattern,
+    exclude?: vscode.GlobPattern | null,
+    maxResults?: number,
+  ): Promise<vscode.Uri[]> {
     return vscode.workspace.findFiles(include, exclude, maxResults);
   }
 
   /**
    * Open file in editor
    */
-  async openFileInEditor(filePath: string, options?: vscode.TextDocumentShowOptions): Promise<vscode.TextEditor> {
+  async openFileInEditor(
+    filePath: string,
+    options?: vscode.TextDocumentShowOptions,
+  ): Promise<vscode.TextEditor> {
     const uri = vscode.Uri.file(filePath);
     const document = await vscode.workspace.openTextDocument(uri);
     return vscode.window.showTextDocument(document, options);
@@ -306,14 +335,17 @@ export class WorkspaceManager {
 
     try {
       const entries = await vscode.workspace.fs.readDirectory(uri);
-      
+
       if (entries.length === 0) {
         await vscode.workspace.fs.delete(uri);
         this.logger.debug(`Removed empty directory: ${dirPath}`);
-        
+
         // Recursively check parent directory
         const parentDir = path.dirname(dirPath);
-        if (this.isPathInWorkspace(parentDir) && parentDir !== this.workspaceRoot) {
+        if (
+          this.isPathInWorkspace(parentDir) &&
+          parentDir !== this.workspaceRoot
+        ) {
           await this.cleanupEmptyDirectories(parentDir);
         }
       }

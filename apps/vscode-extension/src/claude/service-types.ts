@@ -163,7 +163,7 @@ export enum HealthStatus {
   HEALTHY = 'healthy',
   DEGRADED = 'degraded',
   UNHEALTHY = 'unhealthy',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 export interface SessionManager {

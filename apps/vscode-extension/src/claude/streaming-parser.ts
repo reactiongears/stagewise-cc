@@ -32,14 +32,16 @@ export interface ParserState {
  * Handles real-time streaming responses from Claude Code CLI
  */
 export class StreamingResponseParser extends EventEmitter {
-  private buffer: string = '';
+  private buffer = '';
   private state: ParserState;
   private logger: Logger;
   private outputChannel: vscode.OutputChannel;
 
   constructor() {
     super();
-    this.outputChannel = vscode.window.createOutputChannel('Claude Streaming Parser');
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Claude Streaming Parser',
+    );
     this.logger = new Logger(this.outputChannel);
     this.state = this.initializeState();
   }
@@ -92,7 +94,7 @@ export class StreamingResponseParser extends EventEmitter {
       isInCodeBlock: false,
       currentBlockContent: [],
       processedChars: 0,
-      completeBlocks: []
+      completeBlocks: [],
     };
   }
 
@@ -160,7 +162,9 @@ export class StreamingResponseParser extends EventEmitter {
       }
     }
 
-    this.logger.debug(`Started code block: language=${this.state.currentBlockLanguage}, file=${this.state.currentBlockFilePath}`);
+    this.logger.debug(
+      `Started code block: language=${this.state.currentBlockLanguage}, file=${this.state.currentBlockFilePath}`,
+    );
   }
 
   /**
@@ -173,7 +177,7 @@ export class StreamingResponseParser extends EventEmitter {
       language: this.state.currentBlockLanguage || 'plaintext',
       code: this.state.currentBlockContent.join('\n'),
       filePath: this.state.currentBlockFilePath,
-      operation: this.inferOperation()
+      operation: this.inferOperation(),
     };
 
     // Add metadata if available
@@ -197,7 +201,9 @@ export class StreamingResponseParser extends EventEmitter {
     this.state.currentBlockFilePath = undefined;
     this.state.currentBlockContent = [];
 
-    this.logger.info(`Completed code block: ${codeBlock.filePath || 'unnamed'} (${codeBlock.operation})`);
+    this.logger.info(
+      `Completed code block: ${codeBlock.filePath || 'unnamed'} (${codeBlock.operation})`,
+    );
   }
 
   /**
@@ -206,10 +212,14 @@ export class StreamingResponseParser extends EventEmitter {
   private inferOperation(): 'create' | 'update' | 'delete' | 'unknown' {
     // Look for operation hints in the content
     const content = this.state.currentBlockContent.join('\n').toLowerCase();
-    
+
     if (content.includes('create new file') || content.includes('new file')) {
       return 'create';
-    } else if (content.includes('update') || content.includes('modify') || content.includes('change')) {
+    } else if (
+      content.includes('update') ||
+      content.includes('modify') ||
+      content.includes('change')
+    ) {
       return 'update';
     } else if (content.includes('delete') || content.includes('remove')) {
       return 'delete';
@@ -235,7 +245,7 @@ export class StreamingResponseParser extends EventEmitter {
         for (const line of lines) {
           this.processLine(line);
         }
-        
+
         // Remove processed block from buffer
         this.buffer = this.buffer.replace(match, '');
       }
@@ -261,7 +271,9 @@ export class StreamingResponseParser extends EventEmitter {
     }
 
     this.emit('complete', this.state.completeBlocks);
-    this.logger.info(`Parsing complete. Total blocks: ${this.state.completeBlocks.length}`);
+    this.logger.info(
+      `Parsing complete. Total blocks: ${this.state.completeBlocks.length}`,
+    );
   }
 
   /**
