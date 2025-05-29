@@ -95,3 +95,7 @@ export { PromptTransformer } from './prompt-transformer';
 export { ContextFormatter } from './context-formatter';
 export { TokenManager } from './token-manager';
 export * from './prompt-templates';
+
+// Claude Agent - Task 7
+export { ClaudeAgent, createClaudeAgent } from './call-claude-agent';
+export type { ClaudeAgentConfig, ClaudeAgentResult } from './call-claude-agent';
