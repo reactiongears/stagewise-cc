@@ -1,368 +1,296 @@
-import type { WorkspaceInfo } from './workspace-types';
-import type { DOMElementData } from './dom-types';
-import type { PluginContextData } from './transformation-types';
-
-// Re-export for convenience
-export type { WorkspaceInfo, FileInfo } from './workspace-types';
-export type { DOMElementData } from './dom-types';
-export type { PluginContextData } from './transformation-types';
+import type * as vscode from 'vscode';
 
 /**
- * Main interface defining the structure for Claude prompt context data.
- * This serves as the contract between context-gathering components and the prompt transformation engine.
+ * Main interface for Claude prompt context
+ * Contains all necessary information for creating optimized prompts
  */
 export interface ClaudePromptContext {
-  /**
-   * The main user prompt/message
-   */
+  // User's original message/prompt
   userMessage: string;
 
-  /**
-   * Current browser URL when the prompt was sent (if applicable)
-   */
+  // DOM elements selected in the browser
+  selectedElements?: DOMElementContext[];
+
+  // Current URL and page context
   currentUrl?: string;
+  pageTitle?: string;
 
-  /**
-   * Timestamp when the prompt was created
-   */
-  timestamp: Date;
+  // Plugin-specific context
+  pluginContext?: PluginContext;
 
-  /**
-   * Workspace metadata including file information and project context
-   */
-  workspaceInfo?: WorkspaceInfo;
+  // Workspace information
+  workspaceInfo: WorkspaceInfo;
 
-  /**
-   * Workspace metadata (alternative property name for compatibility)
-   */
-  workspaceMetadata?: WorkspaceInfo;
+  // Image/screenshot data
+  images?: ImageContext[];
 
-  /**
-   * Selected DOM elements from the browser
-   */
-  selectedElements?: DOMElementData[];
-
-  /**
-   * DOM elements (alternative property name for compatibility)
-   */
-  domElements?: DOMElementData[];
-
-  /**
-   * Context data provided by plugins
-   */
-  pluginContext?: PluginContextData[];
-
-  /**
-   * Plugin contexts (alternative property name for compatibility)
-   */
-  pluginContexts?: PluginContextData[];
-
-  /**
-   * Metadata for transformation and optimization
-   */
-  metadata?: ContextMetadata;
-
-  /**
-   * Context strategy (can be at top level or in metadata)
-   */
-  strategy?: ContextStrategy | string;
-
-  /**
-   * Maximum tokens for the prompt
-   */
-  maxTokens?: number;
+  // Additional metadata
+  metadata: ContextMetadata;
 }
 
 /**
- * Metadata for controlling context transformation
+ * DOM element context from browser
+ */
+export interface DOMElementContext {
+  // Element identification
+  tagName: string;
+  id?: string;
+  className?: string;
+  xpath?: string;
+  selector?: string;
+
+  // Element content and attributes
+  textContent?: string;
+  innerHTML?: string;
+  attributes: Record<string, string>;
+
+  // Element position and visibility
+  boundingBox?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  isVisible: boolean;
+
+  // Parent/child relationships
+  parentElement?: DOMElementContext;
+  childElements?: DOMElementContext[];
+
+  // Computed styles (relevant ones)
+  computedStyles?: Record<string, string>;
+
+  // Event listeners if detectable
+  eventListeners?: string[];
+}
+
+/**
+ * Workspace context information
+ */
+export interface WorkspaceInfo {
+  // Root workspace path
+  rootPath: string;
+
+  // Currently active file
+  activeFile?: FileContext;
+
+  // Open files in editor
+  openFiles: FileContext[];
+
+  // Project structure (simplified tree)
+  projectStructure?: ProjectStructure;
+
+  // Workspace settings relevant to Claude
+  settings?: WorkspaceSettings;
+
+  // Git information if available
+  gitInfo?: GitContext;
+}
+
+/**
+ * File context information
+ */
+export interface FileContext {
+  // File path (relative to workspace)
+  path: string;
+
+  // File content (or relevant portion)
+  content?: string;
+
+  // Language identifier
+  language: string;
+
+  // Current selection if any
+  selection?: {
+    startLine: number;
+    startColumn: number;
+    endLine: number;
+    endColumn: number;
+    text: string;
+  };
+
+  // File diagnostics (errors, warnings)
+  diagnostics?: vscode.Diagnostic[];
+
+  // File symbols (functions, classes, etc.)
+  symbols?: vscode.DocumentSymbol[];
+}
+
+/**
+ * Project structure representation
+ */
+export interface ProjectStructure {
+  // Root directory name
+  name: string;
+
+  // Simplified file tree (limited depth)
+  tree: FileTreeNode;
+
+  // Key files (package.json, config files, etc.)
+  keyFiles: string[];
+
+  // Detected project type/framework
+  projectType?: string;
+
+  // Dependencies if detectable
+  dependencies?: Record<string, string>;
+}
+
+/**
+ * File tree node
+ */
+export interface FileTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: FileTreeNode[];
+  size?: number;
+  modified?: Date;
+}
+
+/**
+ * Git context information
+ */
+export interface GitContext {
+  // Current branch
+  branch?: string;
+
+  // Modified files
+  modifiedFiles?: string[];
+
+  // Recent commits (limited)
+  recentCommits?: GitCommit[];
+
+  // Current status
+  status?: string;
+}
+
+/**
+ * Git commit information
+ */
+export interface GitCommit {
+  hash: string;
+  message: string;
+  author: string;
+  date: Date;
+}
+
+/**
+ * Plugin-specific context
+ */
+export interface PluginContext {
+  // Plugin identifier
+  pluginId: string;
+
+  // Plugin-specific data
+  data: Record<string, any>;
+
+  // Plugin version
+  version?: string;
+}
+
+/**
+ * Image context for screenshots
+ */
+export interface ImageContext {
+  // Image data (base64 or URL)
+  data: string;
+
+  // Image type
+  type: 'screenshot' | 'element' | 'diagram' | 'other';
+
+  // Image metadata
+  metadata: {
+    width?: number;
+    height?: number;
+    format?: string;
+    timestamp?: number;
+  };
+
+  // Associated DOM element if applicable
+  associatedElement?: DOMElementContext;
+
+  // Description or alt text
+  description?: string;
+}
+
+/**
+ * Context metadata
  */
 export interface ContextMetadata {
-  /**
-   * Schema version for migration compatibility
-   */
-  version: string;
+  // When the context was captured
+  timestamp: number;
 
-  /**
-   * Conversation session ID for context continuity
-   */
+  // Source of the context request
+  source: 'toolbar' | 'command' | 'menu' | 'api';
+
+  // User action that triggered the request
+  action?: string;
+
+  // Session ID for tracking
   sessionId?: string;
 
-  /**
-   * Strategy for building context
-   */
-  contextStrategy: ContextStrategy;
+  // Priority level
+  priority?: 'low' | 'medium' | 'high';
 
-  /**
-   * Maximum tokens allocated for context
-   */
-  tokenBudget: number;
-
-  /**
-   * Priority order for including context elements
-   */
-  priority: ContextPriority[];
+  // Any additional custom metadata
+  custom?: Record<string, any>;
 }
 
 /**
- * Strategy for context building
+ * Workspace settings relevant to Claude
  */
-export enum ContextStrategy {
-  /**
-   * Include only essential context
-   */
-  MINIMAL = 'minimal',
+export interface WorkspaceSettings {
+  // Editor settings
+  tabSize?: number;
+  insertSpaces?: boolean;
 
-  /**
-   * Include standard context for most use cases
-   */
-  STANDARD = 'standard',
+  // Language-specific settings
+  languageSettings?: Record<string, any>;
 
-  /**
-   * Include all available context
-   */
-  COMPREHENSIVE = 'comprehensive',
+  // Extension settings
+  extensionSettings?: Record<string, any>;
+
+  // Format on save
+  formatOnSave?: boolean;
 }
 
 /**
- * Priority levels for different context types
+ * Options for context extraction
  */
-export enum ContextPriority {
-  /**
-   * Currently active file content
-   */
-  CURRENT_FILE = 'current_file',
+export interface ContextExtractionOptions {
+  // Include file content
+  includeFileContent?: boolean;
 
-  /**
-   * Selected DOM elements
-   */
-  SELECTED_ELEMENTS = 'selected_elements',
+  // Maximum file size to include
+  maxFileSize?: number;
 
-  /**
-   * High-level workspace overview
-   */
-  WORKSPACE_OVERVIEW = 'workspace_overview',
+  // Maximum depth for project structure
+  maxTreeDepth?: number;
 
-  /**
-   * Related files (imports, dependencies)
-   */
-  RELATED_FILES = 'related_files',
+  // Include git information
+  includeGitInfo?: boolean;
 
-  /**
-   * Plugin-provided context data
-   */
-  PLUGIN_DATA = 'plugin_data',
+  // Include diagnostics
+  includeDiagnostics?: boolean;
+
+  // File patterns to exclude
+  excludePatterns?: string[];
 }
 
 /**
- * Default context metadata
+ * Result of context extraction
  */
-export const DEFAULT_CONTEXT_METADATA: ContextMetadata = {
-  version: '1.0.0',
-  contextStrategy: ContextStrategy.STANDARD,
-  tokenBudget: 4000,
-  priority: [
-    ContextPriority.CURRENT_FILE,
-    ContextPriority.SELECTED_ELEMENTS,
-    ContextPriority.WORKSPACE_OVERVIEW,
-    ContextPriority.RELATED_FILES,
-    ContextPriority.PLUGIN_DATA,
-  ],
-};
+export interface ExtractedContext {
+  // The complete context
+  context: ClaudePromptContext;
 
-/**
- * Validates if an object conforms to the ClaudePromptContext interface
- */
-export function validateClaudePromptContext(
-  context: any,
-): context is ClaudePromptContext {
-  return (
-    context &&
-    typeof context === 'object' &&
-    typeof context.userMessage === 'string' &&
-    context.timestamp instanceof Date &&
-    context.workspaceInfo &&
-    typeof context.workspaceInfo === 'object' &&
-    context.metadata &&
-    typeof context.metadata === 'object' &&
-    typeof context.metadata.version === 'string' &&
-    isValidContextStrategy(context.metadata.contextStrategy) &&
-    typeof context.metadata.tokenBudget === 'number' &&
-    Array.isArray(context.metadata.priority)
-  );
-}
+  // Extraction warnings
+  warnings?: string[];
 
-/**
- * Type guard for ContextStrategy
- */
-export function isValidContextStrategy(
-  strategy: string,
-): strategy is ContextStrategy {
-  return Object.values(ContextStrategy).includes(strategy as ContextStrategy);
-}
+  // Token count estimate
+  estimatedTokens?: number;
 
-/**
- * Type guard for ContextPriority
- */
-export function isValidContextPriority(
-  priority: string,
-): priority is ContextPriority {
-  return Object.values(ContextPriority).includes(priority as ContextPriority);
-}
-
-/**
- * Token budget allocation
- */
-export interface TokenBudget {
-  total: number;
-  systemPrompt: number;
-  userPrompt: number;
-  userMessage: number;
-  domElements: number;
-  currentFile: number;
-  relatedFiles: number;
-  workspaceContext: number;
-  pluginContext: number;
-}
-
-/**
- * Token allocation result
- */
-export interface TokenAllocation {
-  total: number;
-  used: number;
-  sections: Array<{
-    type: keyof TokenBudget;
-    used: number;
-    budget: number;
-  }>;
-}
-
-/**
- * Prompt section for token management
- */
-export interface PromptSection {
-  type: string;
-  content: string;
-  priority: number;
-  tokens: number;
-}
-
-/**
- * Prompt validation result
- */
-export interface PromptValidationResult {
-  isValid: boolean;
-  errors: string[];
-  estimatedTokens: number;
-  sections?: string[];
-}
-
-/**
- * Creates an empty context with default values
- */
-export function createEmptyContext(): ClaudePromptContext {
-  return {
-    userMessage: '',
-    timestamp: new Date(),
-    workspaceInfo: {
-      rootPath: '',
-      name: 'Unknown',
-      folders: [],
-      openFiles: [],
-      recentFiles: [],
-      projectStructure: {
-        frameworks: [],
-        dependencies: [],
-      },
-    },
-    metadata: { ...DEFAULT_CONTEXT_METADATA },
-  };
-}
-
-/**
- * Merges two contexts, with the additional context taking precedence
- */
-export function mergeContexts(
-  base: ClaudePromptContext,
-  additional: Partial<ClaudePromptContext>,
-): ClaudePromptContext {
-  const merged: ClaudePromptContext = {
-    ...base,
-    ...additional,
-  };
-
-  // Handle workspaceInfo merge
-  if (base.workspaceInfo && additional.workspaceInfo) {
-    merged.workspaceInfo = {
-      ...base.workspaceInfo,
-      ...additional.workspaceInfo,
-    };
-  }
-
-  // Handle metadata merge
-  if (base.metadata && additional.metadata) {
-    merged.metadata = {
-      ...base.metadata,
-      ...additional.metadata,
-    };
-  }
-
-  return merged;
-}
-
-/**
- * Estimates token usage for a context (rough approximation)
- * Uses ~4 characters per token as a heuristic
- */
-export function estimateTokenUsage(context: ClaudePromptContext): number {
-  let charCount = 0;
-
-  // Count user message
-  charCount += context.userMessage.length;
-
-  // Count URL
-  if (context.currentUrl) {
-    charCount += context.currentUrl.length;
-  }
-
-  // Count workspace info (simplified)
-  charCount += JSON.stringify(context.workspaceInfo).length;
-
-  // Count DOM elements
-  if (context.selectedElements) {
-    charCount += JSON.stringify(context.selectedElements).length;
-  }
-
-  // Count plugin context
-  if (context.pluginContext) {
-    charCount += JSON.stringify(context.pluginContext).length;
-  }
-
-  // Rough estimate: 4 characters per token
-  return Math.ceil(charCount / 4);
-}
-
-/**
- * Serializes context to JSON string
- */
-export function serializeContext(context: ClaudePromptContext): string {
-  return JSON.stringify(context, null, 2);
-}
-
-/**
- * Deserializes context from JSON string
- */
-export function deserializeContext(serialized: string): ClaudePromptContext {
-  const parsed = JSON.parse(serialized);
-
-  // Convert timestamp string back to Date
-  if (parsed.timestamp) {
-    parsed.timestamp = new Date(parsed.timestamp);
-  }
-
-  if (!validateClaudePromptContext(parsed)) {
-    throw new Error('Invalid ClaudePromptContext format');
-  }
-
-  return parsed;
+  // Extraction time
+  extractionTime?: number;
 }
