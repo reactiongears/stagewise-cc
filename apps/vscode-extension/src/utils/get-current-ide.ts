@@ -3,12 +3,28 @@ import * as vscode from 'vscode';
 export type IDE = 'VSCODE' | 'WINDSURF' | 'CURSOR' | 'UNKNOWN';
 
 export function getCurrentIDE(): IDE {
-  if (vscode.env.appName.toLowerCase().includes('windsurf')) {
+  // Check vscode.env.appName for specific IDE detection
+  const appName = vscode.env.appName.toLowerCase();
+
+  // Check for Windsurf first (most specific)
+  if (appName.includes('windsurf')) {
     return 'WINDSURF';
-  } else if (vscode.env.appName.toLowerCase().includes('cursor')) {
+  }
+
+  // Check for Cursor
+  if (appName.includes('cursor')) {
     return 'CURSOR';
-  } else if (vscode.env.appName.toLowerCase().includes('visual studio code')) {
+  }
+
+  // Check for standard VSCode installations
+  if (
+    appName.includes('visual studio code') ||
+    appName.includes('vscode') ||
+    appName.includes('code')
+  ) {
     return 'VSCODE';
   }
-  return 'UNKNOWN';
+
+  // Default to VSCODE for unknown environments (as per task requirement)
+  return 'VSCODE';
 }

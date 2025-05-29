@@ -8,6 +8,7 @@ import {
 import { setupToolbar } from './setup-toolbar';
 import { getCurrentIDE } from 'src/utils/get-current-ide';
 import { dispatchAgentCall } from 'src/utils/dispatch-agent-call';
+import { setClaudeAgentContext } from 'src/utils/call-claude-agent';
 import { createLifecycleManager } from '../claude/lifecycle-manager';
 import {
   mcpToolbarIntegration,
@@ -48,6 +49,9 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
   context.subscriptions.push(fakeDiagCollection); // Dispose on deactivation
+
+  // Initialize Claude agent context for VSCode integration
+  setClaudeAgentContext(context);
 
   try {
     // Migrate configuration if needed
