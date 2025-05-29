@@ -41,6 +41,9 @@ yarn-error.log*
 # VSCode
 .vscode-test
 
+# Claude
+.claude
+
 # Added by Claude Task Master
 # Logs
 logs

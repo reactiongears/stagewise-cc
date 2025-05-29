@@ -141,7 +141,7 @@ export function registerClaudeInteractionCommands(
           case 'document':
             prompt = `Please add comprehensive documentation comments to the following code:\n\n${selectedText}`;
             break;
-          case 'custom':
+          case 'custom': {
             const customPrompt = await vscode.window.showInputBox({
               prompt: 'Enter your custom prompt',
               placeHolder:
@@ -152,6 +152,7 @@ export function registerClaudeInteractionCommands(
             }
             prompt = `${customPrompt}\n\nCode:\n${selectedText}`;
             break;
+          }
         }
 
         // Send to Claude

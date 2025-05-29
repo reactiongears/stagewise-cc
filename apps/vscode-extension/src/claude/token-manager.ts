@@ -207,8 +207,7 @@ export class TokenManager {
       }
     }
 
-    const trimmedContent =
-      section.content.substring(0, breakPoint) + '\n... (content truncated)';
+    const trimmedContent = `${section.content.substring(0, breakPoint)}\n... (content truncated)`;
 
     return {
       ...section,

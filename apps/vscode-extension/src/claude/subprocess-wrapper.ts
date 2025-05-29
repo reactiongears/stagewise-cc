@@ -1,5 +1,5 @@
-import { type ChildProcess, spawn } from 'child_process';
-import { EventEmitter } from 'events';
+import { type ChildProcess, spawn } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import * as vscode from 'vscode';
 import type {
   ClaudeProcessOptions,
@@ -119,7 +119,7 @@ export class ClaudeSubprocessWrapper extends EventEmitter {
 
         // Write prompt to stdin
         const writeStream = this.process!.stdin!;
-        if (!writeStream.write(prompt + '\n', 'utf-8')) {
+        if (!writeStream.write(`${prompt}\n`, 'utf-8')) {
           // Handle backpressure
           writeStream.once('drain', () => {
             this.state.lastActivity = new Date();

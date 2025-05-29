@@ -308,7 +308,7 @@ export class AtomicOperationsManager {
         }
         try {
           const existing = await vscode.workspace.fs.readFile(uri);
-          const newContent = existing.toString() + '\n' + operation.content;
+          const newContent = `${existing.toString()}\n${operation.content}`;
           await vscode.workspace.fs.writeFile(
             uri,
             Buffer.from(newContent, 'utf8'),
@@ -395,7 +395,7 @@ export class AtomicOperationsManager {
 
       case OperationType.UPDATE:
       case OperationType.APPEND:
-      case OperationType.DELETE:
+      case OperationType.DELETE: {
         // Restore from backup
         const backupPath = transaction.backups.get(operation.targetPath);
         if (backupPath) {
@@ -407,6 +407,7 @@ export class AtomicOperationsManager {
           );
         }
         break;
+      }
     }
   }
 

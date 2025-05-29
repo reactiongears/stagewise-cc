@@ -135,7 +135,7 @@ export class ConversationHistory {
         break;
       }
 
-      context = turnText + '\n\n' + context;
+      context = `${turnText}\n\n${context}`;
       currentTokens += turnTokens;
     }
 

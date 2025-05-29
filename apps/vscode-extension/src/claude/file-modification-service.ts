@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import * as path from 'node:path';
 import { Logger } from './logger';
 import { type FileOperation, OperationType } from './code-extractor';
 import { BackupManager } from './backup-manager';

@@ -58,7 +58,7 @@ export class SessionIntegration {
       if (!session && this.config.autoCreateSession) {
         session = await this.sessionManager.createSession({
           metadata: {
-            title: content.substring(0, 50) + '...',
+            title: `${content.substring(0, 50)}...`,
             projectPath: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
           },
           config: this.config.sessionDefaults,
@@ -129,17 +129,19 @@ export class SessionIntegration {
     }
 
     // Use last turn if not specified
-    if (!fromTurnId && session.turns.length > 0) {
-      fromTurnId = session.turns[session.turns.length - 1].id;
-    }
+    const turnId =
+      fromTurnId ||
+      (session.turns.length > 0
+        ? session.turns[session.turns.length - 1].id
+        : undefined);
 
-    if (!fromTurnId) {
+    if (!turnId) {
       throw new Error('No turn to branch from');
     }
 
     const branch = await this.branching.createBranch(session, {
       name,
-      branchFromTurnId: fromTurnId,
+      branchFromTurnId: turnId,
       copySubsequentTurns: false,
     });
 

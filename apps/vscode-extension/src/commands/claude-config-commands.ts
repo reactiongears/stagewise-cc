@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import type { ClaudeConfigService } from '../claude/config-service';
 import { ConfigurationScope, ClaudeModel } from '../claude/config-types';
 
@@ -92,7 +92,7 @@ export function registerClaudeConfigCommands(
           },
         });
 
-        if (openUri && openUri[0]) {
+        if (openUri?.[0]) {
           const configData = await fs.readFile(openUri[0].fsPath, 'utf8');
           await configService.importConfiguration(configData);
         }

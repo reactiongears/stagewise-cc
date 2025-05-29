@@ -132,7 +132,7 @@ export async function showErrorWithRetry(
         await onRetry();
       } catch (retryError) {
         vscode.window.showErrorMessage(
-          'Retry failed: ' + getUserFriendlyMessage(retryError as Error),
+          `Retry failed: ${getUserFriendlyMessage(retryError as Error)}`,
         );
       }
     }

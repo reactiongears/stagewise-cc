@@ -117,7 +117,7 @@ export function buildFileSection(files: FileInfo[]): string {
 
     if (file.content) {
       const preview = file.content.substring(0, 500);
-      lines.push('```' + (file.language || ''));
+      lines.push(`\`\`\`${file.language || ''}`);
       lines.push(preview);
       if (file.content.length > 500) {
         lines.push('... (truncated)');

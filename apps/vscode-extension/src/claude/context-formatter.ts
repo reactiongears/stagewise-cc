@@ -80,7 +80,7 @@ export class ContextFormatter {
         if (element.textContent) {
           const text = element.textContent.trim();
           const truncated =
-            text.length > 100 ? text.substring(0, 100) + '...' : text;
+            text.length > 100 ? `${text.substring(0, 100)}...` : text;
           parts.push(`**Text**: "${truncated}"`);
         }
 
@@ -177,7 +177,7 @@ export class ContextFormatter {
           const lang = file.language || 'text';
           const truncatedContent =
             file.content.length > 2000
-              ? file.content.substring(0, 2000) + '\n... (truncated)'
+              ? `${file.content.substring(0, 2000)}\n... (truncated)`
               : file.content;
           parts.push(`\`\`\`${lang}\n${truncatedContent}\n\`\`\``);
         }

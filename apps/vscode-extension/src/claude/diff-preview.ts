@@ -104,7 +104,7 @@ export class DiffPreviewService {
         originalContent = new TextDecoder().decode(fileContent);
 
         if (operation.type === OperationType.APPEND) {
-          modifiedContent = originalContent + '\n' + operation.content;
+          modifiedContent = `${originalContent}\n${operation.content}`;
         } else if (operation.type === OperationType.DELETE) {
           modifiedContent = '';
         }

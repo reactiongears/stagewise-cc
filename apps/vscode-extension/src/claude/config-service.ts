@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import {
   type ClaudeConfiguration,
   ConfigurationScope,

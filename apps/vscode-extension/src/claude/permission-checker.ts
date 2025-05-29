@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import * as path from 'node:path';
 import { Logger } from './logger';
 import { type FileOperation, OperationType } from './code-extractor';
 
@@ -213,12 +213,13 @@ export class PermissionChecker {
       case OperationType.APPEND:
         return this.checkWritePermission(operation.targetPath);
 
-      case OperationType.MOVE:
+      case OperationType.MOVE: {
         const sourceCheck = await this.checkDeletePermission(
           operation.sourcePath || operation.targetPath,
         );
         if (!sourceCheck.isValid) return sourceCheck;
         return this.checkWritePermission(operation.targetPath);
+      }
 
       default:
         return { isValid: true };

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { ClaudeSubprocessWrapper } from './subprocess-wrapper';
 import type { ClaudeAuthService } from './auth-service';
 import type { ClaudeConfigService } from './config-service';

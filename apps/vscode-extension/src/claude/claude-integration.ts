@@ -193,23 +193,19 @@ export class ClaudeIntegration {
       async (progress) => {
         progress.report({ increment: 0, message: 'Starting...' });
 
-        try {
-          const results =
-            await this.fileModificationService.applyOperations(operations);
+        const results =
+          await this.fileModificationService.applyOperations(operations);
 
-          const successful = results.filter((r) => r.success).length;
-          const failed = results.filter((r) => !r.success).length;
+        const successful = results.filter((r) => r.success).length;
+        const failed = results.filter((r) => !r.success).length;
 
-          const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
-          await this.userConfirmationService.showOperationResult(
-            failed === 0,
-            successful,
-            `Completed in ${duration}s${failed > 0 ? ` (${failed} failed)` : ''}`,
-          );
-        } catch (error) {
-          throw error;
-        }
+        await this.userConfirmationService.showOperationResult(
+          failed === 0,
+          successful,
+          `Completed in ${duration}s${failed > 0 ? ` (${failed} failed)` : ''}`,
+        );
       },
     );
   }
@@ -276,14 +272,15 @@ export class ClaudeIntegration {
     const codeBlockRegex =
       /```(\w+)?\s*(?:(?:\/\/|#)\s*(.+?)\n)?([\s\S]*?)```/g;
 
-    let match;
-    while ((match = codeBlockRegex.exec(content)) !== null) {
+    let match: RegExpExecArray | null = codeBlockRegex.exec(content);
+    while (match !== null) {
       blocks.push({
         language: match[1] || 'plaintext',
         filePath: match[2],
         code: match[3].trim(),
         operation: 'unknown',
       });
+      match = codeBlockRegex.exec(content);
     }
 
     return blocks;

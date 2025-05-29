@@ -65,9 +65,9 @@ export class MarkdownParser {
   parseCodeBlocks(markdown: string): CodeBlock[] {
     const blocks: CodeBlock[] = [];
     const regex = new RegExp(this.patterns.codeBlock);
-    let match;
+    let match: RegExpExecArray | null = regex.exec(markdown);
 
-    while ((match = regex.exec(markdown)) !== null) {
+    while (match !== null) {
       const [fullMatch, language, header, code] = match;
       const metadata = this.parseMetadata(header || '');
 
@@ -81,6 +81,7 @@ export class MarkdownParser {
           description: metadata.title,
         },
       });
+      match = regex.exec(markdown);
     }
 
     this.logger.debug(`Parsed ${blocks.length} code blocks from markdown`);
@@ -171,24 +172,28 @@ export class MarkdownParser {
    */
   extractFilePaths(text: string): string[] {
     const paths: Set<string> = new Set();
-    let match;
+    let match: RegExpExecArray | null;
 
     // Look for explicit file paths
     const filePathRegex = new RegExp(this.patterns.filePath, 'g');
-    while ((match = filePathRegex.exec(text)) !== null) {
+    match = filePathRegex.exec(text);
+    while (match !== null) {
       const path = match[1];
       if (this.isValidFilePath(path)) {
         paths.add(path);
       }
+      match = filePathRegex.exec(text);
     }
 
     // Look for paths in backticks
     const backtickRegex = /`([^`]+)`/g;
-    while ((match = backtickRegex.exec(text)) !== null) {
+    match = backtickRegex.exec(text);
+    while (match !== null) {
       const content = match[1];
       if (this.isValidFilePath(content)) {
         paths.add(content);
       }
+      match = backtickRegex.exec(text);
     }
 
     return Array.from(paths);
@@ -275,7 +280,8 @@ export class MarkdownParser {
     }
 
     // Check for invalid characters
-    const invalidChars = /[<>:"|?*\x00-\x1f]/;
+    // Check for invalid characters (excluding control characters for now)
+    const invalidChars = /[<>:"|?*]/;
     if (invalidChars.test(path)) {
       return false;
     }
@@ -360,29 +366,36 @@ export class MarkdownParser {
       // Extract imports
       const importRegex =
         /import\s+(?:{[^}]+}|\*\s+as\s+\w+|\w+)\s+from\s+['"]([^'"]+)['"]/g;
-      let match;
-      while ((match = importRegex.exec(code)) !== null) {
+      let match: RegExpExecArray | null = importRegex.exec(code);
+      while (match !== null) {
         analysis.imports.push(match[1]);
+        match = importRegex.exec(code);
       }
 
       // Extract exports
       const exportRegex =
         /export\s+(?:default\s+)?(?:class|function|const|let|var|interface|type|enum)\s+(\w+)/g;
-      while ((match = exportRegex.exec(code)) !== null) {
+      match = exportRegex.exec(code);
+      while (match !== null) {
         analysis.exports.push(match[1]);
+        match = exportRegex.exec(code);
       }
 
       // Extract functions
       const functionRegex =
         /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*)?(?:\([^)]*\)|<[^>]*>)*\s*(?:=>|{)/g;
-      while ((match = functionRegex.exec(code)) !== null) {
+      match = functionRegex.exec(code);
+      while (match !== null) {
         analysis.functions.push(match[1]);
+        match = functionRegex.exec(code);
       }
 
       // Extract classes
       const classRegex = /class\s+(\w+)/g;
-      while ((match = classRegex.exec(code)) !== null) {
+      match = classRegex.exec(code);
+      while (match !== null) {
         analysis.classes.push(match[1]);
+        match = classRegex.exec(code);
       }
     }
 

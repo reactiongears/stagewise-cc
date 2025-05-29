@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import * as path from 'node:path';
 import { Logger } from './logger';
 
 /**
@@ -91,7 +91,7 @@ export class WorkspaceManager {
     try {
       const testFile = path.join(
         this.workspaceRoot,
-        '.stagewise-test-' + Date.now(),
+        `.stagewise-test-${Date.now()}`,
       );
       await vscode.workspace.fs.writeFile(
         vscode.Uri.file(testFile),

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import * as path from 'node:path';
 import { Logger } from './logger';
 import type { CodeBlock } from './streaming-parser';
 import {

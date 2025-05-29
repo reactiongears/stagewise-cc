@@ -75,8 +75,7 @@ export function registerClaudeAuthCommands(
             const result = await authService.validateApiKey(apiKey);
             if (result.isValid) {
               vscode.window.showInformationMessage(
-                'API key is valid! Available models: ' +
-                  (result.capabilities?.join(', ') || 'Claude'),
+                `API key is valid! Available models: ${result.capabilities?.join(', ') || 'Claude'}`,
               );
             } else {
               vscode.window.showErrorMessage(

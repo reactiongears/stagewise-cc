@@ -85,17 +85,16 @@ export class UserConfirmationService {
     }
 
     // Generate preview if not provided
-    if (!preview) {
-      preview = await this.diffPreview.generatePreview(operations);
-    }
+    const diffPreview =
+      preview || (await this.diffPreview.generatePreview(operations));
 
     // Check if we should show immediate diff
     if (this.config.alwaysShowDiff) {
-      await this.showDiffPreview(preview);
+      await this.showDiffPreview(diffPreview);
     }
 
     // Show confirmation dialog
-    return await this.showConfirmationDialog(operations, preview);
+    return await this.showConfirmationDialog(operations, diffPreview);
   }
 
   /**

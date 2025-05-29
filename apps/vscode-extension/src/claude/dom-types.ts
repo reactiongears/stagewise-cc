@@ -403,7 +403,7 @@ export function serializeDOMElement(
       .map(([k, v]) => `${k}="${v}"`)
       .join(' ');
 
-    return `<${element.tagName}${attrs ? ' ' + attrs : ''}>${element.textContent || ''}`;
+    return `<${element.tagName}${attrs ? ` ${attrs}` : ''}>${element.textContent || ''}`;
   }
 
   return JSON.stringify(element, null, 2);
@@ -417,5 +417,5 @@ export function truncateTextContent(text: string, maxLength: number): string {
     return text;
   }
 
-  return text.substring(0, maxLength - 3) + '...';
+  return `${text.substring(0, maxLength - 3)}...`;
 }

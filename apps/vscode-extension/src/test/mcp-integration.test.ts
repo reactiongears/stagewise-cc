@@ -1,4 +1,4 @@
-import * as assert from 'assert';
+import * as assert from 'node:assert';
 import * as vscode from 'vscode';
 import { mcpToolbarIntegration } from '../mcp/integration';
 import { toolbarBridge } from '../utils/toolbar-bridge';

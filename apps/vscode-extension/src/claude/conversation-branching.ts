@@ -213,7 +213,7 @@ export class ConversationBranching {
         mergedTurns = [...targetTurns, ...sourceBranch.turns];
         break;
 
-      case 'insert':
+      case 'insert': {
         // Insert at branch point
         const insertIndex = this.findInsertionPoint(session, sourceBranch);
         mergedTurns = [
@@ -222,8 +222,9 @@ export class ConversationBranching {
           ...targetTurns.slice(insertIndex),
         ];
         break;
+      }
 
-      case 'replace':
+      case 'replace': {
         // Replace turns after branch point
         const replaceIndex = this.findInsertionPoint(session, sourceBranch);
         mergedTurns = [
@@ -231,6 +232,7 @@ export class ConversationBranching {
           ...sourceBranch.turns,
         ];
         break;
+      }
 
       default:
         throw new Error(`Unknown merge strategy: ${options.strategy}`);

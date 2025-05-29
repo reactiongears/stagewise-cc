@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { Logger } from './logger';
 import * as vscode from 'vscode';
 
@@ -103,13 +103,14 @@ export class StreamingResponseParser extends EventEmitter {
    */
   private extractCompleteLines(): string[] {
     const lines: string[] = [];
-    let newlineIndex: number;
+    let newlineIndex: number = this.buffer.indexOf('\n');
 
-    while ((newlineIndex = this.buffer.indexOf('\n')) !== -1) {
+    while (newlineIndex !== -1) {
       const line = this.buffer.substring(0, newlineIndex);
       lines.push(line);
       this.buffer = this.buffer.substring(newlineIndex + 1);
       this.state.processedChars += line.length + 1;
+      newlineIndex = this.buffer.indexOf('\n');
     }
 
     return lines;

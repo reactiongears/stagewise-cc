@@ -95,11 +95,12 @@ export class ResponseBuffer {
     const blocks: string[] = [];
     const codeBlockRegex = /```[\s\S]*?```/g;
 
-    let match;
+    let match: RegExpExecArray | null;
     let lastIndex = 0;
     const newBuffer: string[] = [];
 
-    while ((match = codeBlockRegex.exec(this.buffer)) !== null) {
+    match = codeBlockRegex.exec(this.buffer);
+    while (match !== null) {
       // Add content before the match to new buffer
       if (match.index > lastIndex) {
         newBuffer.push(this.buffer.substring(lastIndex, match.index));
@@ -110,6 +111,7 @@ export class ResponseBuffer {
       this.metrics.blocksExtracted++;
 
       lastIndex = match.index + match[0].length;
+      match = codeBlockRegex.exec(this.buffer);
     }
 
     // Add remaining content to new buffer

@@ -100,15 +100,15 @@ export class ProjectDetector {
       // React ecosystem
       if (allDeps.react) {
         frameworks.push('react');
-        if (allDeps['next']) frameworks.push('nextjs');
-        if (allDeps['gatsby']) frameworks.push('gatsby');
+        if (allDeps.next) frameworks.push('nextjs');
+        if (allDeps.gatsby) frameworks.push('gatsby');
         if (allDeps['react-native']) frameworks.push('react-native');
       }
 
       // Vue ecosystem
       if (allDeps.vue) {
         frameworks.push('vue');
-        if (allDeps['nuxt']) frameworks.push('nuxt');
+        if (allDeps.nuxt) frameworks.push('nuxt');
         if (allDeps['@vue/cli-service']) frameworks.push('vue-cli');
       }
 

@@ -515,7 +515,7 @@ export class SessionManager {
     if (!this.activeSessionId) return;
 
     const session = await this.storage.getSession(this.activeSessionId);
-    if (session && session.config.autoSave) {
+    if (session?.config.autoSave) {
       await this.storage.saveSession(session);
       this.logger.debug(`Auto-saved session: ${this.activeSessionId}`);
     }

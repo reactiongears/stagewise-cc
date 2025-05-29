@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import * as path from 'node:path';
 import type { FileInfo } from './workspace-types';
 
 /**
@@ -275,7 +275,7 @@ export class FileAnalyzer {
       if (pkg.version) important.push(`version: "${pkg.version}"`);
       if (pkg.description) important.push(`description: "${pkg.description}"`);
       if (pkg.scripts) {
-        important.push('scripts: ' + Object.keys(pkg.scripts).join(', '));
+        important.push(`scripts: ${Object.keys(pkg.scripts).join(', ')}`);
       }
 
       return important;

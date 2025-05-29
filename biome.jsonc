@@ -14,7 +14,8 @@
       "**/.nuxt/**",
       "**/.svelte-kit/**",
       "**/.output/**",
-      "**/.source/**"
+      "**/.source/**",
+      ".claude"
     ]
   },
   "vcs": {

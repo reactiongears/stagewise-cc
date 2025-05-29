@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import {
   type Session,
   type StoredSession,
@@ -666,7 +666,7 @@ export class SessionStorage {
     const preview = lastTurn.userMessage.content.substring(0, 100);
 
     return preview.length < lastTurn.userMessage.content.length
-      ? preview + '...'
+      ? `${preview}...`
       : preview;
   }
 

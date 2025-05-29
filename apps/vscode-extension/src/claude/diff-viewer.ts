@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import * as path from 'node:path';
 import { Logger } from './logger';
 import type { FileDiff, DiffPreview } from './diff-types';
 import { DiffFormatter } from './diff-formatter';
@@ -87,7 +87,7 @@ export class DiffViewer {
     panel.webview.onDidReceiveMessage(
       async (message) => {
         switch (message.command) {
-          case 'showFile':
+          case 'showFile': {
             const fileDiff = preview.fileOperations.find(
               (fd) => fd.path === message.path,
             );
@@ -95,6 +95,7 @@ export class DiffViewer {
               await this.showDiff(fileDiff);
             }
             break;
+          }
 
           case 'applyChanges':
             await this.applySelectedChanges(preview, message.selectedFiles);
